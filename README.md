@@ -4,8 +4,8 @@ Tools and technologies aimed at modeling and deploying microservice-based applic
 ## Table of Contents
 
 - [Getting started](#getting-started)
-- [The Modeling Language](#modeling-language)
-- [The Deployer](#modeler)
+- [The Modeling Language](#the-modeling-language)
+- [The Deployer](#the-deployer)
 - [License](#license)
 
 
