@@ -3,17 +3,17 @@ Tools and technologies aimed at modeling and deploying microservice-based applic
 
 ## Table of Contents
 
-[Getting started](#getting-started)
-[The Modeling Language](#modeling-language)
-[The Deployer](#modeler)
-[License](#license)
+- [Getting started](#getting-started)
+- [The Modeling Language](#modeling-language)
+- [The Deployer](#modeler)
+- [License](#license)
 
 
 ## Getting started
 
 Clone the repository:
 ```bash
-$ git clone https://www.github.com/jaespei/komponents
+$ git clone https://github.com/jaespei/komponents
 ```
 
 Run deployer

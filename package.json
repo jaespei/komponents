@@ -1,0 +1,21 @@
+{
+  "name": "komponents",
+  "version": "1.0.0",
+  "description": "Tools and technologies aimed at modeling and deploying microservice-based applications.",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "validate": "node deployer/deployer validate",
+    "translate": "node deployer/deployer translate",
+    "deploy": "node deployer/deployer deploy",
+    "undeploy": "node deployer/deployer undeploy"
+  },
+  "author": "Javier Esparza-Peidro <jesparza@dsic.upv.es>",
+  "license": "GPL3",
+  "dependencies": {
+    "dev": "file:deployer"
+  }
+}
