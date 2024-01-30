@@ -1,0 +1,44 @@
+type: deployment
+name: test
+entrypoints:
+  in:
+    protocol: tcp:30000
+    mapping: in
+model:
+  type: composite
+  imports:
+    Nginx: ./samples/components/nginx.yaml
+    Forwarder: ./samples/components/forwarder.yaml
+    Delayer: ./samples/components/delayer.yaml
+  subcomponents:
+    fw: Forwarder
+    delay: Delayer
+    web: 
+      type: Nginx
+      cardinality: "[1:1]"
+      variables:
+        INDEX_CONTENT: |
+          <p>From web subcomponent ..</p>
+          <h1>Hello world!!</h1>
+  connectors:
+    lb: 
+      type: LoadBalancer
+      outputs:
+        - fw.in
+    lk1:
+      type: Link
+      inputs: 
+        - fw.out
+      outputs:
+        - delay.in
+    lk2:
+      type: Link
+      inputs: 
+        - delay.out
+      outputs:
+        - web.in
+  endpoints:
+    in:
+      type: in
+      protocol: tcp:80
+      mapping: lb

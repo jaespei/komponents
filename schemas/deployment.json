@@ -1,0 +1,68 @@
+{
+    "$id": "https://github.com/jaespei/komponents/deployment.json",
+    "title": "Deployment",
+    "description": "Microservices Modeling Language Deployment Schema",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "type": {
+            "type": "string",
+            "const": "deployment"
+        },
+        "model": {
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "$ref": "composite.json"
+                }
+            ]
+        },
+        "labels": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "type": "object",
+            "additionalProperties": {
+                "oneOf": [
+                    {
+                        "type": "string"
+                    },
+                    {
+                        "type": "number"
+                    }
+                ]
+            }
+        },
+        "entrypoints": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "protocol": {
+                        "type": "string",
+                        "pattern": "^((tcp:\\d+)|http|https|.*\\{\\{.+\\}\\}.*)$"
+                    },
+                    "mapping": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "protocol",
+                    "mapping"
+                ]
+            }
+        }
+    },
+    "required": [
+        "name",
+        "type",
+        "model"
+    ]
+}

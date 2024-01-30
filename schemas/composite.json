@@ -1,0 +1,177 @@
+{
+    "$id": "https://github.com/jaespei/komponents/composite.json",
+    "title": "Composite",
+    "description": "Microservices Modeling Language Composite Schema",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "type": {
+            "type": "string",
+            "const": "composite"
+        },
+        "cardinality": {
+            "type": "string",
+            "pattern": "^((\\[\\d*:\\d*\\])|.*\\{\\{.+\\}\\}.*)$"
+        },
+        "imports": {
+            "type": "object",
+            "additionalProperties": {
+                "oneOf": [
+                    {
+                        "type": "string"
+                    },
+                    {
+                        "$ref": "basic.json"
+                    },
+                    {
+                        "$ref": "composite.json"
+                    }
+                ]
+            }
+        },
+        "variables": {
+            "type": "object",
+            "additionalProperties": {
+                "oneOf": [
+                    {
+                        "type": "string"
+                    },
+                    {
+                        "type": "number"
+                    }
+                ]
+            }
+        },
+        "subcomponents": {
+            "type": "object",
+            "additionalProperties": {
+                "oneOf": [
+                    {
+                        "type": "string"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "cardinality": {
+                                "type": "string",
+                                "pattern": "^((\\[\\d*:\\d*\\])|.*\\{\\{.+\\}\\}.*)$"
+                            },
+                            "variables": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "oneOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "number"
+                                        }
+                                    ]
+                                }
+                            },
+                            "policies": {
+                                "type": "object",
+                                "properties": {
+                                    "cpu": {
+                                        "type": "string",
+                                        "pattern": "^((\\d*(.\\d+)?)|.*\\{\\{.+\\}\\}.*)$"
+                                    },
+                                    "memory": {
+                                        "type": "string",
+                                        "pattern": "^((\\d*(.\\d+)?)|.*\\{\\{.+\\}\\}.*)$"
+                                    }
+                                }
+                            }
+                        },
+                        "required": [
+                            "type"
+                        ]
+                    }
+                ]
+            }
+        },
+        "connectors": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    },
+                    "variables": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "number"
+                                }
+                            ]
+                        }
+                    },
+                    "policies": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "inputs": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "pattern": "^(.+\\..+|.*\\{\\{.+\\}\\}.*)$"
+                        }
+                    },
+                    "outputs": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "pattern": "^(.+\\..+|.*\\{\\{.+\\}\\}.*)$"
+                        }
+                    }
+                },
+                "required": [
+                    "type",
+                    "outputs"
+                ]
+            }
+        },
+        "endpoints": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "in",
+                            "out"
+                        ]
+                    },
+                    "protocol": {
+                        "type": "string",
+                        "pattern": "^((tcp:\\d+)|http|https|.*\\{\\{.+\\}\\}.*)$"
+                    },
+                    "required": {
+                        "type": "boolean"
+                    },
+                    "mapping": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type",
+                    "protocol",
+                    "mapping"
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,21 @@
+name: nginx
+type: basic
+cardinality: "[:]"
+runtime: docker
+source: nginx?cmd=echo "$$INDEX_TEMPLATE" > /usr/share/nginx/html/index.html; nginx -g "daemon off;"
+variables:
+  NGINX_PORT: 80
+  INDEX_TEMPLATE: |
+    <!doctype html>
+    <html>
+      <head>
+        <title>Test Page</title>
+      </header>
+      <body>{{ INDEX_CONTENT }}</body>
+    </html>
+  INDEX_CONTENT: |
+    <h1>Hello world!!</h1>
+endpoints:
+  in:
+    type: in
+    protocol: tcp:80

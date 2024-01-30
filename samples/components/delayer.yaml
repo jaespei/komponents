@@ -1,0 +1,33 @@
+name: forwarder
+type: basic
+cardinality: "[:]"
+runtime: docker
+source: haproxy?cmd=echo "$$HAPROXY_CFG" > ./haproxy.cfg; haproxy -f ./haproxy.cfg
+variables:
+  HAPROXY_CFG: |
+    defaults
+        mode tcp
+        timeout client 10000ms
+        timeout connect 3000ms
+        timeout server 10000ms    
+
+    frontend loadbalancer
+        bind *:"$$IN_PORT"
+        tcp-request inspect-delay "$$DELAY"ms
+        tcp-request content accept if WAIT_END
+
+        default_backend targets
+
+    backend targets
+        balance roundrobin
+        server target "$$OUT_DNS":"$$OUT_PORT" check
+  DELAY: 5000
+  IN_PORT: 80
+  OUT_PORT: 80
+endpoints:
+  in:
+    type: in
+    protocol: tcp:{{IN_PORT}}
+  out:
+    type: out
+    protocol: tcp:{{OUT_PORT}}

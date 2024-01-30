@@ -1,0 +1,28 @@
+{
+  "name": "dev",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src.js",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ajv": "^8.12.0",
+    "axios": "^1.6.5",
+    "command-exists": "^1.2.9",
+    "decompress": "^4.2.1",
+    "download": "^8.0.0",
+    "lodash": "^4.17.21",
+    "q": "^1.5.1",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0",
+    "yaml": "^2.3.4",
+    "yargs": "^17.7.2"
+  }
+}

@@ -1,0 +1,14 @@
+name: stresser
+type: basic
+cardinality: "[:]"
+runtime: docker
+source: debian?cmd=apt update; apt install -y stress-ng; stress-ng -c $$CPUS -l $$CPU --vm-bytes $$MEMORY%
+variables:
+  CPUS: 1 
+  CPU: 50
+  MEMORY: 50
+  IN_PORT: 80
+endpoints:
+  in:
+    type: in
+    protocol: tcp:{{IN_PORT}}

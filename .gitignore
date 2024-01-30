@@ -1,3 +1,9 @@
+# unnecessary local folders and files
+build
+package-lock.json
+out
+test
+
 # Logs
 logs
 *.log

@@ -1,0 +1,150 @@
+{
+    "$id": "https://github.com/jaespei/komponents/basic.json",
+    "title": "Basic",
+    "description": "Microservices Modeling Language Basic Schema",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "type": {
+            "type": "string",
+            "const": "basic"
+        },
+        "cardinality": {
+            "type": "string",
+            "pattern": "^(\\[\\d*:\\d*\\]|.*\\{\\{.+\\}\\}.*)$"
+        },
+        "policies": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "type": "string",
+                    "pattern": "^((\\d*(.\\d+)?)|.*\\{\\{.+\\}\\}.*)$"
+                },
+                "memory": {
+                    "type": "string",
+                    "pattern": "^((\\d*(.\\d+)?)|.*\\{\\{.+\\}\\}.*)$"
+                }
+            }
+        },
+        "runtime": {
+            "type": "string",
+            "const": "docker"
+        },
+        "source": {
+            "type": "string"
+        },
+        "resources": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "type": "string",
+                    "pattern": "^((\\[\\d*(.\\d+)?:\\d*(.\\d+)?\\])|.*\\{\\{.+\\}\\}.*)$"
+                },
+                "memory": {
+                    "type": "string",
+                    "pattern": "^((\\[\\d*(.\\d+)?:\\d*(.\\d+)?\\])|.*\\{\\{.+\\}\\}.*)$"
+                }
+            }
+        },
+        "durability": {
+            "type": "string",
+            "enum": [
+                "ephemeral",
+                "permanent"
+            ]
+        },
+        "labels": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "type": "object",
+            "additionalProperties": {
+                "oneOf": [
+                    {
+                        "type": "string"
+                    },
+                    {
+                        "type": "number"
+                    }
+                ]
+            }
+        },
+        "endpoints": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "in",
+                            "out"
+                        ]
+                    },
+                    "protocol": {
+                        "type": "string",
+                        "pattern": "^((tcp:\\d+)|http|https|.*\\{\\{.+\\}\\}.*)$"
+                    },
+                    "required": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "type",
+                    "protocol"
+                ]
+            }
+        },
+        "events": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            }
+        },
+        "volumes": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    },
+                    "path": {
+                        "type": "string"
+                    },
+                    "scope": {
+                        "type": "string",
+                        "enum": [
+                            "local",
+                            "global"
+                        ]
+                    },
+                    "durability": {
+                        "type": "string",
+                        "enum": [
+                            "ephemeral",
+                            "permanent"
+                        ]
+                    },
+                    "url": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "path"
+                ]
+            }
+        }
+    },
+    "required": [
+        "name",
+        "type",
+        "runtime",
+        "source"
+    ]
+}
