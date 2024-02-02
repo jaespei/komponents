@@ -1,0 +1,124 @@
+type: deployment
+name: pattern-database-per-service
+entrypoints:
+  in:
+    protocol: tcp:30000
+    mapping: in
+model:
+  type: composite
+  imports:
+    Database:
+      name: Database
+      type: basic
+      cardinality: "[1:1]"
+      runtime: docker
+      source: mysql
+      variables:
+        MYSQL_DATABASE: test
+        MYSQL_ROOT_PASSWORD: root
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:3306
+    Service:
+      name: Service
+      type: basic
+      cardinality: "[1:1]"
+      runtime: docker
+      source: php?cmd=docker-php-ext-install mysqli; mkdir wwww; cd wwww; echo "$$INDEX" > index.php; php -S 0.0.0.0:80; 
+      variables:
+        INDEX: |
+          <?php 
+          error_reporting(E_ERROR | E_PARSE);
+          mysqli_report(MYSQLI_REPORT_OFF);
+          $$server = $$_ENV['DB_DNS']; $$user = 'root'; $$passwd = 'root';
+          $$con = mysqli_connect($$server, $$user, $$passwd, 'test');
+          if (!$$con) {
+            echo '<!doctype hml><html><head><title>Database per service pattern</title></head><body><h1>MySQL is starting .... this might take a while. Try again later.</h1></body></html>';
+            die();
+          }
+          if (isset($$_REQUEST['delete'])) {
+              mysqli_query($$con, "DELETE FROM data WHERE id=" . $$_REQUEST['id']);
+          } elseif (isset($$_REQUEST['add'])) {
+              $$id = floor(microtime(true) * 1000);
+              $$sql = "INSERT INTO data VALUES($$id, '" . $$_REQUEST['name'] . "','" . $$_REQUEST['value'] . "')";
+              error_log($$sql);
+              mysqli_query($$con, $$sql);
+          }
+          $$result = mysqli_query($$con, 'SELECT * FROM data');
+          if (!$$result) {
+            mysqli_query($$con, 'CREATE TABLE data (id BIGINT, name VARCHAR(32), value VARCHAR(32))');
+            $$result = mysqli_query($$con, 'SELECT * FROM data');
+          }
+          ?>
+          <!doctype html>
+          <html>
+          <head>
+              <title>Database per service pattern</title>
+              <script>
+                  let seconds = 10;
+                  setInterval(() => {
+                      seconds--;
+                      if (seconds == 0) window.location = window.location.pathname;
+                      else document.getElementById("countdown").innerHTML = 'Reloading in ' + seconds + ' seconds ...';
+                  }, 1000)
+              </script>
+          </head>
+          <body>
+              <h1 id="countdown">Reloading in 10 seconds ...</h1>
+              <h1>Data stored in the database:</h1>
+              
+          <?php 
+          if (mysqli_num_rows($$result) > 0):
+              while($$row = mysqli_fetch_assoc($$result)):   
+          ?>
+              <h1>
+                  <form action="<?php echo $$_SERVER['PHP_SELF'] ?>" method="get">
+                  <input type="hidden" name="id" value="<?= $$row['id'] ?>">
+                  <?= $$row['name'] ?>=<?= $$row['value'] ?><input type="submit" name="delete" value="delete">
+                  </form>
+              </h1>
+          <?php 
+              endwhile;
+          else:
+          ?>
+              <h1>No data</h1>
+          <?php 
+          endif;
+          ?>
+              <form action="<?php echo $$_SERVER['PHP_SELF'] ?>" method="get">
+              <input type="text" name="name" placeholder="Name">
+              <input type="text" name="value" placeholder="Value">
+              <input type="submit" name="add" value="add">
+              </form>
+          </body>
+          </html>
+          <?php
+          mysqli_close($$con);
+          ?>
+      endpoints:
+        www:
+          type: in
+          protocol: tcp:80
+        db:
+          type: out
+          protocol: tcp:3306
+  subcomponents:
+    svc: Service
+    db: Database  
+  connectors:
+    lb: 
+      type: LoadBalancer
+      outputs:
+        - svc.www
+    lk:
+      type: Link
+      inputs:
+        - svc.db
+      outputs:
+        - db.in
+  endpoints:
+    in:
+      type: in
+      protocol: tcp:80
+      mapping: lb

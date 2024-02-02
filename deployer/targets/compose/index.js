@@ -186,6 +186,7 @@ async function translateBasic(model, adjacents, opts) {
         _.each(adjacents, adj => {
             env[`${adj.endpoint.name}_DNS`.toUpperCase()] = `${adj.prefix? adj.prefix + ".": ""}${adj.name}`.replaceAll(".", "-");
             env[`${adj.endpoint.name}_PROTOCOL`.toUpperCase()] = `${adj.protocol}`.toUpperCase();
+            env[`${adj.endpoint.name}_PORT`.toUpperCase()] = adj.protocol.split(":")[1];            
         });
         Object.assign(svc.environment, env);
     }    
@@ -239,6 +240,9 @@ async function translateConnector(connector, model, parent, input, adjacents, op
     //if (adjacents.length > 1) throw new Error("Only one connector input/output is supported");
 
     let artifacts = [];
+
+    // Link connectors are not translated
+    if (connector.type == "Link") return artifacts;
 
     // Translate every native/basic connector
     let prefix = `${parent.prefix? parent.prefix + ".": ""}${parent.name}`; 
@@ -346,8 +350,6 @@ backend targets
         suffix: ".cfg",
         content: cfg
     });
-    //server-template target 5 ${OUT_DNS}:${OUT_PORT} check resolvers mydns init-addr none 
-
 
     return artifacts;
 }
@@ -394,7 +396,7 @@ async function deployArtifacts(artifacts, opts) {
         ps.on("error", (err) => reject(err) );
         ps.stdout.pipe(process.stdout);
         ps.stderr.pipe(process.stderr);
-        ps.on("close", (code) => resolve());
+        ps.on("close", (code) => { if (code == 0) resolve(); else reject(new Error(`Subprocess exited with code ${code}`))});
     });    
     
     return done;
@@ -423,7 +425,7 @@ async function deployArtifacts(artifacts, opts) {
         ps.on("error", (err) => reject(err) );
         ps.stdout.pipe(process.stdout);
         ps.stderr.pipe(process.stderr);
-        ps.on("close", (code) => resolve());
+        ps.on("close", (code) => { if (code == 0) resolve(); else reject(new Error(`Subprocess exited with code ${code}`))});
     });    
     
     return done;

@@ -269,8 +269,11 @@ async function translateBasic(model, adjacents, opts) {
             env.push({
                 name: `${adj.endpoint.name}_PROTOCOL`.toUpperCase(),
                 value: `${adj.protocol}`.toUpperCase()
-            })
-
+            });
+            env.push({
+                name: `${adj.endpoint.name}_PORT`.toUpperCase(),
+                value: adj.protocol.split(":")[1]
+            });
         });
         rs_ss.spec.template.spec.containers[0].env.push(...env);
     }
@@ -513,7 +516,7 @@ async function packArtifacts(artifacts, opts) {
         ps.on("error", (err) => reject(err) );
         ps.stdout.pipe(process.stdout);
         ps.stderr.pipe(process.stderr);
-        ps.on("close", (code) => resolve());
+        ps.on("close", (code) => { if (code == 0) resolve(); else reject(new Error(`Subprocess exited with code ${code}`))});
     });   
 
     return done;
@@ -539,10 +542,10 @@ async function packArtifacts(artifacts, opts) {
             "kubectl", 
             ["delete", "ns", namespace]
         );
-        ps.on("error", (err) => reject(err) );
+        ps.on("error", (err) => reject(err));
         ps.stdout.pipe(process.stdout);
         ps.stderr.pipe(process.stderr);
-        ps.on("close", (code) => resolve());
+        ps.on("close", (code) => { if (code == 0) resolve(); else reject(new Error(`Subprocess exited with code ${code}`))});
     });   
 
     return done;

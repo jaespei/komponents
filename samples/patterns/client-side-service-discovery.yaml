@@ -1,0 +1,95 @@
+type: deployment
+name: pattern-client-side-service-discovery
+entrypoints:
+  in:
+    protocol: tcp:30000
+    mapping: in
+model:
+  type: composite
+  imports:
+    Nginx: samples/components/nginx.yaml
+    Client:
+      name: Client
+      type: basic
+      cardinality: "[1:1]"
+      runtime: docker
+      source: node?cmd=echo "$$APP" > main.js; node main
+      variables:
+        APP: |
+          const dns = require('dns');
+          const http = require('http');
+          const url = require('url');
+          require('http').createServer((req, res) => {
+              console.log('received ' + req.url);
+              let svc = {
+                dns: process.env.SVC_DNS,
+                port: Number(process.env.SVC_PORT)
+              };
+              if (req.url.startsWith("/forward")) {
+                let addr = decodeURIComponent(req.url.split("=")[1]);
+                let opts = new url.URL('http://' + addr + ':' + svc.port + '/');
+                let serverReq = http.request(opts, (serverRes) => { 
+                  res.writeHead(serverRes.statusCode, serverRes.headers);
+                  serverRes.pipe(res, {end:true});
+                });
+                req.pipe(serverReq);
+              } else {
+                let peers = '<form action="/forward"><ul>';
+                dns.lookup(svc.dns, {all:true}, (err, addrs) => {
+                  if (err) {
+                    res.end();
+                    return;
+                  }
+                  console.log(addrs);
+                  for (let addr of addrs) {
+                    peers += `
+                    <li>
+                      $${addr.address}
+                      <button type="submit" name="addr" value="$${encodeURIComponent(addr.address)}">Forward request</button>
+                    </li>` 
+                  }
+                  peers += '</ul></form>'
+                  res.end(`
+                    <!doctype html>
+                    <html>
+                      <head>
+                        <title>Client-side service discovery pattern</title>
+                      </head>
+                      <body>
+                        <h1>My peers are: </h1>
+                        $${peers}
+                      </body>
+                    </html>
+                    `);
+                });
+              }
+          }).listen(80);
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:80
+        svc:
+          type: out
+          protocol: tcp:80
+    
+  subcomponents:
+    c: Client
+    svc: 
+      type: Nginx
+      cardinality: "[2:2]"
+  connectors:
+    lb: 
+      type: LoadBalancer
+      outputs:
+        - c.in
+    lk:
+      type: Link
+      inputs:
+        - c.svc
+      outputs:
+        - svc.in
+  endpoints:
+    in:
+      type: in
+      protocol: tcp:80
+      mapping: lb

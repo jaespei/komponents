@@ -1,0 +1,201 @@
+type: deployment
+name: pattern-event-driven-architecture
+entrypoints:
+  pub:
+    protocol: tcp:30000
+    mapping: pub
+  sub:
+    protocol: tcp:30001
+    mapping: sub
+model:
+  type: composite
+  imports:
+    Publisher:
+      name: Publisher
+      type: basic
+      cardinality: "[1:1]"
+      runtime: docker
+      source: node?cmd=mkdir app; cd app; npm install amqplib; echo "$$APP" > main.js; node main
+      variables:
+        APP: |
+          const http = require('http');
+          const amqp = require('amqplib/callback_api');
+
+          let channel = null;
+          let mb = {
+              dns: process.env['MB_DNS'],
+              port: Number(process.env['MB_PORT'])
+          };
+          function connect(cb) {
+              if (channel) cb(null, channel);
+              else amqp.connect(`amqp://$${mb.dns}:$${mb.port}`, (err, con) => {
+                  if (err) cb(err);
+                  else {
+                      con.createChannel((err, _channel) => {
+                          if (err) cb(err);
+                          else {
+                              channel = _channel;
+                              channel.assertExchange('test', 'fanout', {durable: false});
+                              cb(null, channel);
+                          }
+                      });
+                  }
+              });
+          }
+          require('http').createServer((req, res) => {
+              let msg = '';
+              if (req.url.startsWith("/publish")) {
+                  msg = req.url.split("=")[1];
+                  connect((err, channel) => {
+                      if (err) console.log(err);
+                      if (channel) {
+                          channel.publish('test', '', Buffer.from(msg));
+                      }
+                  });
+              }    
+              res.end(`
+              <!doctype html>
+              <html>
+                  <head>
+                      <title>Event-driven architecture pattern</title>
+                  </head>
+                  <body>
+                      <h1>This is the publisher</h1>
+                      <h1>Publish message</h1>
+                      <form action="/publish">
+                          <input style="font-size: 30px;" type="text" name="message" placeholder="Message" value="$${msg}">
+                          <button><h1>Publish</h1></button>
+                      </form>
+                  </body>
+              </html>
+              `);
+          }).listen(80);          
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:80
+        mb:
+          type: out
+          protocol: tcp:5672
+    Subscriber:
+      name: Subscriber
+      type: basic
+      cardinality: "[1:1]"
+      runtime: docker
+      source: node?cmd=mkdir app; cd app; npm install amqplib; echo "$$APP" > main.js; node main
+      variables:
+        APP: |
+          const http = require('http');
+          const amqp = require('amqplib/callback_api');
+
+          let channel = null;
+          let messages = [];
+          let mb = {
+              dns: process.env['MB_DNS'],
+              port: Number(process.env['MB_PORT'])
+          };
+          function connect(cb) {
+              if (channel) cb(null, channel);
+              else amqp.connect(`amqp://$${mb.dns}:$${mb.port}`, (err, con) => {
+                  if (err) cb(err);
+                  else {
+                      con.createChannel((err, _channel) => {
+                          if (err) cb(err);
+                          else {
+                              channel = _channel;
+                              channel.assertExchange('test', 'fanout', { durable: false });
+                              channel.assertQueue('', { exclusive: true }, (err, q) => {
+                                  if (err) cb(err);
+                                  else {
+                                      console.log('Waiting for messages');
+                                      channel.bindQueue(q.queue, 'test', '');
+                                      channel.consume(q.queue, function (msg) {
+                                          messages.push(msg.content.toString());
+                                      }, { noAck: true });
+                                      cb(null, channel);
+                                  }
+                              });
+                          }
+                      });
+                  }
+              });
+          }
+          require('http').createServer((req, res) => {
+              connect((err, channel) => {
+                  if (err) res.end();
+                  else {
+                      let html = '<ul>';
+                      for (let msg of messages) {
+                          html += `<li>$${msg}</li>`;
+                      }
+                      html += '</ul>';
+                      res.end(`
+                      <!doctype html>
+                      <html>
+                          <head>
+                              <title>Event-driven architecture pattern</title>
+                              <script>
+                                  setTimeout(()=>window.location.reload(),1000);
+                              </script>
+                          </head>
+                          <body>
+                              <h1>This is the subscriber</h1>
+                              <h1>Messages</h1>
+                              $${html}
+                          </body>
+                      </html>
+                  `);
+                  }
+              })
+          }).listen(80);         
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:80
+        mb:
+          type: out
+          protocol: tcp:5672
+    Broker:
+      name: Broker
+      type: basic
+      cardinality: "[1:1]"
+      runtime: docker
+      source: rabbitmq
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:5672    
+  subcomponents:
+    pub: Publisher
+    sub: Subscriber
+    mb: Broker
+  connectors:
+    lb1: 
+      type: LoadBalancer
+      outputs:
+        - pub.in
+    lb2: 
+      type: LoadBalancer
+      outputs:
+        - sub.in
+    lk1:
+      type: Link
+      inputs:
+        - pub.mb
+      outputs:
+        - mb.in
+    lk2:
+      type: Link
+      inputs:
+        - sub.mb
+      outputs:
+        - mb.in
+  endpoints:
+    pub:
+      type: in
+      protocol: tcp:80
+      mapping: lb1
+    sub:
+      type: in
+      protocol: tcp:80
+      mapping: lb2

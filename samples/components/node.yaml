@@ -1,0 +1,23 @@
+name: node
+type: basic
+cardinality: "[:]"
+runtime: docker
+source: node?cmd=echo "$$APP" > main.js; node main
+variables:
+  NODE_PORT: 80
+  APP: |
+    require('http').createServer((req, res) => {
+      res.end(`
+      <!doctype html>
+      <html>
+        <head>
+          <title>Test Page</title>
+        </header>
+        <body><h1>$${Date.now()} - Hello world</h1></body>
+      </html>
+      `);
+    }).listen({{ NODE_PORT }});
+endpoints:
+  in:
+    type: in
+    protocol: tcp:{{ NODE_PORT }}

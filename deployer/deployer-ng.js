@@ -3,6 +3,10 @@
 /**
  * Deployer of high-level MSA models to different target platforms.
  * 
+ * Known limitations:
+ * - Composite components are not scalable, only one instance is supported.
+ * - Connectors do only accept one input and one output.
+ * 
  * @module deployer
  * @author Javier Esparza-Peidro <jesparza@dsic.upv.es>
  */
@@ -10,11 +14,9 @@
 const fs = require("fs");
 const vm = require("vm");
 const path = require("path");
-const child_process = require("child_process");
 
 const _ = require("lodash");
 const YAML = require("yaml");
-const commandExists = require("command-exists").sync;
 
 const Q = require("q");
 Q.waitAll = function (promises) {
@@ -67,9 +69,9 @@ function main() {
 
                 })
         }, async (argv) => {
+            //logger.debug(`executing with arguments ${JSON.stringify(argv)}`);
 
-            let opts = argv;
-            logger = opts.logger = winston.createLogger({
+            logger = winston.createLogger({
                 level: argv.verbose == 0 ? "warn" : (argv.verbose == 1 ? "info" : (argv.verbose == 2 ? "debug" : "silly")),
                 format: winston.format.simple(),
                 transports: [
@@ -78,8 +80,13 @@ function main() {
                 ]
             });
 
+            // options??
+            let opts = {};
+
             try {
-                await validate(opts)
+                console.error(`Validating specification ${argv.url}`);
+                await validate(argv.url, opts)
+                console.error(`The specification is apparently valid :-)`);
             } catch (err) {
                 console.error(err.stack);
             }
@@ -115,9 +122,9 @@ function main() {
                     type: "string"
                 })
         }, async (argv) => {
+            logger.debug(`executing with arguments ${JSON.stringify(argv)}`);
 
-            let opts = argv;
-            logger = opts.logger = winston.createLogger({
+            logger = winston.createLogger({
                 level: argv.verbose == 0 ? "warn" : (argv.verbose == 1 ? "info" : (argv.verbose == 2 ? "debug" : "silly")),
                 format: winston.format.simple(),
                 transports: [
@@ -127,8 +134,34 @@ function main() {
             });
 
             try {
-                // Translate model
-                await translate(opts)
+
+                // 1. Validate parameters
+                let [schema, path] = argv.storage.split("://");
+                if (!path) {
+                    //throw error(`Unable to fetch url ${url}: unsupported url`);
+                    path = schema;
+                    schema = "file";
+                }
+                if (!["file", "nfs"].includes(schema)) throw new Error(`Unsupported schema ${schema} for volumes storage`);
+
+                // options??
+                let opts = {
+                    target: argv.target,
+                    output: argv.output,
+                    storage: `${schema}://${path}`,
+                    registry: argv.registry
+                };
+
+                // 1. Validate specification
+                console.error(`Validating specification ${argv.url}`);
+                let model = await validate(argv.url, opts)
+                console.error(`The specification is apparently valid :-)`);
+
+                // 2. Translate model
+                console.error(`Translating specification`);
+                let translated = await translate(model, opts)
+                console.error(`The specification has been correctly translated :-)`);
+
             } catch (err) {
                 console.error(err.stack);
             }
@@ -140,17 +173,8 @@ function main() {
                     describe: 'Specification location'
                 })
                 .option('target', {
-                    alias: "t",
-                    describe: "The target platform",
-                    choices: ['k8s', 'compose'],
-                    default: "k8s",
-                    type: "string"
-                })
-                .option('output', {
-                    alias: "o",
-                    describe: "The output directory",
-                    default: "out",
-                    type: "string"
+                    alias: 't',
+                    default: 'k8s'
                 })
                 .option('storage', {
                     alias: "s",
@@ -165,22 +189,7 @@ function main() {
                 })
         }, async (argv) => {
 
-            let opts = argv;
-            logger = opts.logger = winston.createLogger({
-                level: argv.verbose == 0 ? "warn" : (argv.verbose == 1 ? "info" : (argv.verbose == 2 ? "debug" : "silly")),
-                format: winston.format.simple(),
-                transports: [
-                    new winston.transports.Console(),
-                    //new winston.transports.File({ filename: 'combined.log' })
-                ]
-            });
 
-            try {
-                // Deploy model
-                await deploy(opts)
-            } catch (err) {
-                console.error(err.stack);
-            }
 
         })
         .command('undeploy [url]', 'Undeploy specification ', (yargs) => {
@@ -189,52 +198,11 @@ function main() {
                     describe: 'Specification location'
                 })
                 .option('target', {
-                    alias: "t",
-                    describe: "The target platform",
-                    choices: ['k8s', 'compose'],
-                    default: "k8s",
-                    type: "string"
-                })
-                .option('output', {
-                    alias: "o",
-                    describe: "The output directory",
-                    default: "out",
-                    type: "string"
-                })
-                .option('storage', {
-                    alias: "s",
-                    describe: "The volumes storage url",
-                    default: "file://./volumes",
-                    type: "string"
-                })
-                .option('registry', {
-                    alias: "r",
-                    describe: "The registry URL where built images will be registered",
-                    type: "string"
+                    alias: 't',
+                    default: 'k8s'
                 })
         }, async (argv) => {
-            try {
 
-                let opts = argv;
-                logger = opts.logger = winston.createLogger({
-                    level: argv.verbose == 0 ? "warn" : (argv.verbose == 1 ? "info" : (argv.verbose == 2 ? "debug" : "silly")),
-                    format: winston.format.simple(),
-                    transports: [
-                        new winston.transports.Console(),
-                        //new winston.transports.File({ filename: 'combined.log' })
-                    ]
-                });
-
-                try {
-                    // Undeploy model
-                    await undeploy(opts)
-                } catch (err) {
-                    console.error(err.stack);
-                }
-
-            } catch (err) {
-                console.error(err.stack);
-            }
 
         })
 
@@ -251,22 +219,19 @@ function main() {
 }
 
 /**
- * Validate model. If the model is invalid an exception is thrown.
+ * Validate the given deployment specification. 
+ * If the model is incorrect an exception is thrown.
  * 
- * @param {Object} opts - Options
- * @param {string} opts.url - The specification URL
- * @return {Object} The resolved model
+ * @param {string|Object} url - The specification location
+ * @param {Object} opts - Additional options 
  */
-async function validate(opts) {
-    console.error(`- Validating model ${opts.url}`);
+async function validate(url, opts) {
+    logger.debug(`validate(${JSON.stringify(url)},${JSON.stringify(opts)})`)
 
-    if (!opts.url) throw new Error("Missing model URL");
-
-    let spec;
-    if (_.isString(opts.url)) {
-        spec = await _fetchUrl(opts.url, opts);
+    if (_.isString(url)) {
+        spec = await _fetchUrl(url);
         spec = YAML.parse(spec);
-    } else spec = opts.url;
+    } else spec = url;
 
     // 1. Validate deployment syntax
     let validate = ajv.getSchema("deployment");
@@ -275,127 +240,7 @@ async function validate(opts) {
     }
 
     // 2. Validate composite component
-    let model = await _validateComponent(spec, spec.model, {prefix: "", parent: null});
-
-    console.error(`- The model is apparently valid :-)`);
-
-    return model;
-}
-
-
-/**
- * Translate model. 
- * 
- * @param {Object} opts - Options
- * @param {string} opts.url - The specification URL
- * @param {string} opts.target - Target platform
- * @param {string} opts.volumes - Volumes url
- * @param {string} opts.output - Output folder
- * @param {string} opts.storage - Volume storage
- * @param {string} opts.registry - Image registry
- * @returns A dictionary with all the translated artifacts
- */
-async function translate(opts) {
-
-    // 1. Validate parameters
-    let [_schema, _path] = opts.storage.split("://");
-    if (!_path) {
-        _path = _schema;
-        _schema = "file";
-    }
-    if (!["file", "nfs"].includes(_schema)) throw new Error(`Unsupported schema ${schema} for volumes storage`);
-
-    opts.storage = `${_schema}://${_path}`;
-
-    // 2. Validate model
-    let validated = await validate(opts);
-
-    // 3. Translate deployment
-    console.error(`- Translating model`);
-    let artifacts = await targets[opts.target].translateDeployment(
-        validated,
-        opts
-    );
-
-    // 4. Translate composite
-    artifacts.push(... await _translateComposite(
-        validated,
-        opts)
-    );
-
-    // 5. Pack artifacts
-    artifacts = await targets[opts.target].packArtifacts(artifacts, opts);
-
-    if (fs.existsSync(opts.output)) {
-        fs.rmSync(opts.output, { recursive: true, force: true });
-    }
-    fs.mkdirSync(opts.output);
-    for (let i = 0; i < artifacts.length; i++) {
-        let artifact = artifacts[i];
-        //let fileName = path.join(opts.output, i + "." + (artifact.prefix? artifact.prefix + ".": "") + artifact.name + artifact.suffix);
-        let fileName = path.join(opts.output, (artifact.prefix ? artifact.prefix + "." : "") + artifact.name + artifact.suffix);
-        fs.writeFileSync(fileName, artifact.content);
-    }
-
-    console.error(`- The model has been correctly translated (in ${opts.output} folder) :-)`);
-
-    return artifacts;
-}
-
-/**
- * Deploy model to the target platform.
- * 
- * @param {Object} opts - Options
- * @param {string} opts.url - The specification URL
- * @param {string} opts.target - Target platform
- * @param {string} opts.volumes - Volumes url
- * @param {string} opts.output - Output folder
- * @param {string} opts.storage - Volume storage
- * @param {string} opts.registry - Image registry
- */
-async function deploy(opts) {
-
-    // 1. Translate model
-    let artifacts = await translate(opts);
-
-    console.error(`- Deploying model`);
-
-    // 2. Deploy artifacts
-    await targets[opts.target].deployArtifacts(
-        artifacts,
-        opts
-    );
-
-    console.error(`- The model has been correctly deployed :-)`);
-
-}
-
-/**
- * Undeploy model from the target platform.
- * 
- * @param {Object} opts - Options
- * @param {string} opts.url - The specification URL
- * @param {string} opts.target - Target platform
- * @param {string} opts.volumes - Volumes url
- * @param {string} opts.output - Output folder
- * @param {string} opts.storage - Volume storage
- * @param {string} opts.registry - Image registry
- */
-async function undeploy(opts) {
-
-
-    // 1. Translate model
-    let artifacts = await translate(opts);
-
-    console.error(`- Undeploying model`);
-
-    // 2. Deploy artifacts
-    await targets[opts.target].undeployArtifacts(
-        artifacts,
-        opts
-    );
-
-    console.error(`- The model has been correctly undeployed :-)`);
+    return await _validateComponent(spec, spec.model, { prefix: "", parent: null });
 
 }
 
@@ -411,7 +256,6 @@ async function undeploy(opts) {
  * @param {Object} model - The component model
  * @param {Object} opts - Additional options
  * @param {string} opts.prefix - The current prefix in the components hierarchy
- * @param {Object} opts.parent - The parent model
  */
 async function _validateComponent(deployment, model, opts) {
     logger.debug(`_validateComponent(${JSON.stringify(deployment)},${JSON.stringify(model)})`)
@@ -423,60 +267,113 @@ async function _validateComponent(deployment, model, opts) {
     }
 
     // Resolve model
-    model = await _resolveModel(deployment, model, opts);
+    let resolved = await _resolveModel(deployment, model, opts);
 
-    // Validate subcomponents
-    for (let subcompName in model.subcomponents) {
-        let subcomp = model.subcomponents[subcompName];
-        let subcompType = model.imports[subcomp.type];
+    if (resolved.type == "basic") {
+        models[`${(resolved.prefix ? resolved.prefix + "." : "")}${resolved.name}`] = resolved;
+    } else {
 
-        // Validate subcomponent deployment
-        await _validateComponent(
-            subcomp,
-            subcompType,
-            {
-                prefix: opts.prefix ? `${opts.prefix}.${model.name}` : model.name,
-                parent: model,
-                atts: { tag: "component" }
+        // Replicate composite max times
+        let [min, max] = resolved.cardinality.slice(1, -1).split(":");
+        for (let i = 0; i < max; i++) {
+
+            deployment.name = `${deployment.name}${min<max? "-" + i: ""}`;
+
+             // Resolve model
+            resolved = await _resolveModel(deployment, model, opts);
+            models[`${(resolved.prefix ? resolved.prefix + "." : "")}${resolved.name}`] = resolved;
+
+            // Validate subcomponents
+            for (let subcompName in resolved.subcomponents) {
+                let subcomp = resolved.subcomponents[subcompName];
+                let subcompType = resolved.imports[subcomp.type];
+
+                // Validate subcomponent deployment
+                await _validateComponent(
+                    subcomp,
+                    subcompType,
+                    {
+                        prefix: opts.prefix ? `${opts.prefix}.${resolved.name}` : resolved.name,
+                        parent: resolved,
+                        atts: { tag: "component" }
+                    }
+                );
             }
-        );
+
+            // Validate connectors
+            for (let conName in resolved.connectors) {
+                let con = resolved.connectors[conName];
+                let conType = resolved.imports[con.type];
+
+                // Validate connector deployment
+                if (conType) await _validateComponent(
+                    con,
+                    conType,
+                    {
+                        prefix: opts.prefix ? `${opts.prefix}.${resolved.name}` : resolved.name,
+                        parent: resolved,
+                        atts: { tag: "connector" }
+                    }
+                );
+
+            }
+        }
     }
 
-    // Validate connectors
-    for (let conName in model.connectors) {
-        let con = model.connectors[conName];
-        let conType = model.imports[con.type];
-
-        // Validate connector deployment
-        if (conType) await _validateComponent(
-            con,
-            conType,
-            {
-                prefix: opts.prefix ? `${opts.prefix}.${model.name}` : model.name,
-                parent: model,
-                atts: { tag: "connector" }
-            }
-        );
-
-    }
-    return model;
+    return resolved;
 
 }
 
+
 /**
- * Translates the specified composite model to platform artifacts.
+ * Translate the specification. 
  * 
- * @param {Object} model - The model to translate
- * @param {Object} opts  - Additional options
- * @returns {Array<Object>} - The translated artifacts
+ * @param {Object} model - The resolved root model
+ * @param {Object} opts - Additional options 
+ * @param {string} opts.target - Target platform
+ * @param {string} opts.volumes - Volumes url
+ * @param {string} opts.output - Output folder
+ * @returns A dictionary with all the translated artifacts
  */
+async function translate(model, opts) {
+
+    opts.logger = logger;
+
+    // Translate deployment
+    let artifacts = await targets[opts.target].translateDeployment(
+        model,
+        opts
+    );
+
+    // Translate composite
+    artifacts.push(... await _translateComposite(
+        model,
+        opts)
+    );
+
+    // Pack artifacts
+    artifacts = await targets[opts.target].packArtifacts(artifacts, opts);
+
+    if (fs.existsSync(opts.output)) {
+        fs.rmSync(opts.output, { recursive: true, force: true });
+    }
+    fs.mkdirSync(opts.output);
+    for (let i = 0; i < artifacts.length; i++) {
+        let artifact = artifacts[i];
+        //let fileName = path.join(opts.output, i + "." + (artifact.prefix? artifact.prefix + ".": "") + artifact.name + artifact.suffix);
+        let fileName = path.join(opts.output, (artifact.prefix ? artifact.prefix + "." : "") + artifact.name + artifact.suffix);
+        fs.writeFileSync(fileName, artifact.content);
+    }
+    return artifacts;
+}
+
 async function _translateComposite(model, opts) {
-    logger.debug(`_translateComposite(${(model.prefix ? model.prefix + "." : "")}${model.name})`);
+    logger.info(`_translateComposite(${(model.prefix ? model.prefix + "." : "")}${model.name})`);
 
     let artifacts = [];
 
     // 1. Apply topological order
-    let nodes = _topologicalOrder(model, opts);
+    let nodes = _topologicalOrder(model);
 
     // 2. Translate subcomponents/connectors in order
     for (let node of nodes) {
@@ -541,7 +438,7 @@ async function _translateComposite(model, opts) {
  * @param {Object} model - The composite model
  * @returns {Array<Object>} - The sorted list of nodes {type,name}
  */
-function _topologicalOrder(model, opts) {
+function _topologicalOrder(model) {
     logger.debug(`_topologicalOrder(${(model.prefix ? model.prefix + "." : "")}${model.name})`);
 
     // Mark all nodes as unvisited
@@ -616,6 +513,8 @@ function _topologicalOrder(model, opts) {
         if (!found) initNodes.push({ type: "subcomponent", name: subcompName });
     });
 
+    //logger.debug(`initNodes: (${JSON.stringify(initNodes)})`);
+
     let sorted = [];
     for (let node of initNodes) {
         if (!_.find(allNodes, (n) => n.type == node.type && n.name == node.name).visited)
@@ -626,16 +525,8 @@ function _topologicalOrder(model, opts) {
     return sorted;
 }
 
-/**
- * Look for connector input adjacent.
- * 
- * @param {Object} con - The connector data
- * @param {Object} parent - The parent model
- * @param {Object} opts - Additional options
- * @returns {Object} - The adjacent information
- */
 function _findConnectorInput(con, parent, opts) {
-    logger.debug(`_findConnectorInput(${(parent.prefix ? parent.prefix + "." : "")}${parent.name}.${con.name})`);
+    logger.info(`_findConnectorInput(${(parent.prefix ? parent.prefix + "." : "")}${parent.name}.${con.name})`);
 
     let type;
     let endpoint = _.find(parent.endpoints, (ep) => ep.type == "in" && ep.mapping == con.name);
@@ -684,21 +575,12 @@ function _findConnectorInput(con, parent, opts) {
         };*/
 
 
-    logger.debug(` ---> conInput=${JSON.stringify(conInput)}`);
+    logger.info(` ---> conInput=${JSON.stringify(conInput)}`);
     return conInput;
 }
 
-/**
- * Look for composite input adjacent.
- * 
- * @param {Object} deployment - The deployment information
- * @param {Object} model - The model
- * @param {Object} endpoint - The endpoint to explore
- * @param {Object} opts - Additional options
- * @returns {Object} - The adjacent information
- */
 function _findCompositeInput(deployment, model, endpoint, opts) {
-    logger.debug(`_findCompositeInput(${(model.prefix ? model.prefix + "." : "")}${model.name},${endpoint.name})`);
+    logger.info(`_findCompositeInput(${(model.prefix ? model.prefix + "." : "")}${model.name},${endpoint.name})`);
 
     // - if composite, we need to go deeper in the hierarchy
     //   until we either find a 'basic' or a 'connector'
@@ -720,16 +602,9 @@ function _findCompositeInput(deployment, model, endpoint, opts) {
 
 }
 
-/**
- * Look for all connector adjacents.
- * 
- * @param {Object} con - The connector information
- * @param {Object} parent - The parent model
- * @param {Object} opts - Additional options
- * @returns {Array<Object} - The adjacents information
- */
+
 function _findConnectorAdjacents(con, parent, opts) {
-    logger.debug(`_findConnectorAdjacents(${(parent.prefix ? parent.prefix + "." : "")}${parent.name}.${con.name})`);
+    logger.info(`_findConnectorAdjacents(${(parent.prefix ? parent.prefix + "." : "")}${parent.name}.${con.name})`);
 
     let adjacents = [];
     let conType = models[`${parent.prefix ? parent.prefix + "." : ""}${parent.name}.${con.name}`];
@@ -766,20 +641,12 @@ function _findConnectorAdjacents(con, parent, opts) {
 
 
     });
-    logger.debug(` ---> adjacents=${JSON.stringify(adjacents)}`);
+    logger.info(` ---> adjacents=${JSON.stringify(adjacents)}`);
     return adjacents;
 }
 
-/**
- * Look for all component adjacents.
- * 
- * @param {Object} deployment - The deployment information
- * @param {Object} model - The model
- * @param {Object} opts - Additional options
- * @returns {Array<Object>} - The adjacents information
- */
 function _findAllComponentAdjacents(deployment, model, opts) {
-    logger.debug(`_findAllComponentAdjacents(${(model.prefix ? model.prefix + "." : "")}${model.name})`);
+    logger.info(`_findAllComponentAdjacents(${(model.prefix ? model.prefix + "." : "")}${model.name})`);
     let eps = _.filter(model.endpoints, (ep) => ep.type == "out");
     let adjacents = [];
     for (let ep of eps) {
@@ -788,17 +655,9 @@ function _findAllComponentAdjacents(deployment, model, opts) {
     return adjacents;
 }
 
-/**
- * Look for component adjacents.
- * 
- * @param {Object} deployment - The deployment information
- * @param {Object} model - The model
- * @param {Object} endpoint - The endpoint to explore
- * @param {Object} opts - Additional options
- * @returns {Array<Object>} - The adjacents information
- */
 function _findComponentAdjacents(deployment, model, endpoint, opts) {
-    logger.debug(`_findComponentAdjacents(${(model.prefix ? model.prefix + "." : "")}${model.name}, ${model.name}, ${JSON.stringify(endpoint)}})`);
+    //logger.info(`_findComponentAdjacents(${deployment.name}, ${model.name}, ${JSON.stringify(endpoint)}, ${opts.prefix}})`);   
+    logger.info(`_findComponentAdjacents(${(model.prefix ? model.prefix + "." : "")}${model.name}, ${model.name}, ${JSON.stringify(endpoint)}})`);
 
 
     let adjacents = [];
@@ -922,7 +781,7 @@ function _findComponentAdjacents(deployment, model, endpoint, opts) {
                 ));
         }
     }
-    logger.debug(` ---> adjacents=${JSON.stringify(adjacents)}`);
+    logger.info(` ---> adjacents=${JSON.stringify(adjacents)}`);
     return adjacents;
 
 }
@@ -959,11 +818,11 @@ function _findComponentAdjacents(deployment, model, endpoint, opts) {
  * @returns The resolved model
  */
 async function _resolveModel(deployment, model, opts) {
-    logger.debug(`_resolveModel(${opts.prefix ? opts.prefix + "." : ""}${deployment.name})`);
+    logger.info(`_resolveModel(${opts.prefix ? opts.prefix + "." : ""}${deployment.name})`);
 
     // If model is a reference then download
     if (_.isString(model)) {
-        model = await _fetchUrl(model, opts);
+        model = await _fetchUrl(model);
         model = YAML.parse(model);
     }
 
@@ -1130,7 +989,7 @@ async function _resolveModel(deployment, model, opts) {
         _.each(model.imports, async (type, typeName) => {
 
             if (_.isString(type)) {
-                promises.push(_fetchUrl(type, opts).then(str => { resolved.imports[typeName] = YAML.parse(str); }));
+                promises.push(_fetchUrl(type).then(str => { resolved.imports[typeName] = YAML.parse(str); }));
             } else resolved.imports[typeName] = type;
         });
 
@@ -1566,9 +1425,8 @@ async function _resolveModel(deployment, model, opts) {
  * Obtain resource from url.
  * 
  * @param {string} url - The file URL
- * @param {Object} opts - Options
  */
-async function _fetchUrl(url, opts) {
+async function _fetchUrl(url) {
     logger.debug(`_fetchUrl(${url})`);
 
     let [schema, path] = url.split("://");

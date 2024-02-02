@@ -1,0 +1,119 @@
+type: deployment
+name: pattern-gateway
+entrypoints:
+  in:
+    protocol: tcp:30000
+    mapping: in
+model:
+  type: composite
+  imports:
+    Service:
+      name: Service
+      type: basic
+      cardinality: "[:]"
+      runtime: docker
+      source: node?cmd=echo "$$APP" > main.js; node main
+      variables:
+        SERVICE_NAME: Service XX
+        APP: |
+          require('http').createServer((req, res) => {
+            res.end(`
+            <!doctype html>
+            <html>
+              <head>
+                <title>Gateway pattern</title>
+              </head>
+              <body><h1>{{ SERVICE_NAME }}: Hello world!!</h1></body>
+            </html>
+            `);
+          }).listen(80);
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:80
+    Gateway:
+      name: Gateway
+      type: basic
+      cardinality: "[:]"
+      runtime: docker
+      source: node?cmd=echo "$$APP" > main.js; node main
+      variables:
+        APP: |
+          const http = require('http');
+          const url = require('url');
+          require('http').createServer((req, res) => {
+              let svc1 = {
+                  dns: process.env.SVC1_DNS,
+                  port: Number(process.env.SVC1_PORT)
+              };
+              let svc2 = {
+                  dns: process.env.SVC2_DNS,
+                  port: Number(process.env.SVC2_PORT)
+              };
+              let svc;
+              if (req.url.startsWith("/service1")) svc = svc1;
+              if (req.url.startsWith("/service2")) svc = svc2;
+              if (svc) {
+                  let opts = new url.URL('http://' + svc.dns + ':' + svc.port + req.url);
+                  let serverReq = http.request(opts, (serverRes) => {
+                      res.writeHead(serverRes.statusCode, serverRes.headers);
+                      serverRes.pipe(res, {end:true});
+                  });
+                  req.pipe(serverReq);
+              } else {
+                  res.end(`
+                      <!doctype html>
+                      <html>
+                        <head>
+                          <title>Gateway pattern</title>
+                        </head>
+                        <body>
+                          <h1>Gateway: Invalid path $${req.url}</h1>
+                          <h2>Try either /service1 or /service2</h2>
+                        </body>
+                      </html>
+                  `);
+              }
+          }).listen(80);
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:80
+        svc1:
+          type: out
+          protocol: tcp:80
+        svc2: 
+          type: out
+          protocol: tcp:80
+  subcomponents:
+    gw: Gateway
+    svc1:
+      type: Service
+      variables:
+        SERVICE_NAME: Service 1
+    svc2:
+      type: Service
+      variables:
+        SERVICE_NAME: Service 2
+  connectors:
+    lb1: 
+      type: LoadBalancer
+      outputs:
+        - gw.in
+    lb2:
+      type: LoadBalancer
+      inputs: 
+        - gw.svc1
+      outputs:
+        - svc1.in
+    lb3:
+      type: LoadBalancer
+      inputs: 
+        - gw.svc2
+      outputs:
+        - svc2.in
+  endpoints:
+    in:
+      type: in
+      protocol: tcp:80
+      mapping: lb1
