@@ -7,7 +7,7 @@ Tools and technologies aimed at modeling and deploying microservice-based applic
 - [The Modeling Language](#the-modeling-language)
 - [Design Patterns](#design-patterns)
 - [The Deployer](#the-deployer)
-- [The Components](#the-components)
+- [The Components source](#the-components-source)
 
 
 ## Getting started
@@ -34,17 +34,19 @@ $ npm run undeploy -- samples/deployments/test.yaml -t compose
 ## The Modeling Language
 The syntax of the modeling language is defined using [JSON-Schema](./schemas/README.md).
 
-We encourage researchers to download the schemas and validate their own models.
+We encourage researchers and enthusiasts to download the schemas and validate their own models.
 
 ## Design Patterns
 To demonstrate the applicability of the modeling language, common microservice design patterns have been modeled and are available [here](./samples/patterns/README.md). 
 
-These patterns can be easily deployed to both Kubernetes and Docker Compose using [The Deployer tool](#the-deployer).
+These patterns can be easily deployed to both [Kubernetes](https://kubernetes.io/) and [Docker Compose](https://www.docker.com/) using [the Deployer tool](#the-deployer).
 
 ## The Deployer
-Experimental tool for validating, translating and deploying microservice-based applications described using our modeling language. 
+Experimental tool for [validating](#validation), [translating](#translation) and [deploying](#deployment) microservice-based applications described using our [modeling language](#the-modeling-language). 
 
-All commands must be executed from the repository root folder.
+To use this tool, [Node.js](https://nodejs.org/) must be previously installed. To deploy models to Kubernetes and Docker Compose, both `kubectl` and `docker compose` commands must be available and correctly configured in the command line. 
+
+The following lines describe the Deployer tool usage. All commands must be executed from the repository root folder.
 
 ### Validation
 
@@ -77,7 +79,7 @@ The following options are supported.
 | `-s <url>` or `--storage <url>` | Specifies the storage URL for volumes |
 | `-r <url>` or `--registry <url>` | Specifies the URL of the resgistry where images will be registered. The `docker` command must be available and correctly configured. More on this [here](#the-components) |
 
-For example, the next command generates artifacts for Docker Compose, stores volumes in folder /volumes and all built Docker images get registered in a registry available in localhost:5000.
+For example, the next command generates artifacts for Docker Compose, stores volumes in folder `/volumes` and all built Docker images get registered in a registry available in `localhost:5000`.
 
 ```bash
 $ npm run translate -- path_to_model/spec.yaml` -t compose -s file:///volumes -r localhost:5000
@@ -97,7 +99,7 @@ In order to deploy to Docker Compose, the command `docker compose` must be avail
 
 This command supports the same options specified for the [translate](#translation) command.
 
-## The Components
+## The Components source
 At runtime, multiple instances of every component get created. Every instance runs the bits of a package obtained from a given `source` within a particular `runtime`. 
 
 At the current implementation level, only the Docker `runtime` is supported. Therefore the `source` attribute must point to a valid Docker image. The image may reside in the public [Docker hub registry](hub.docker.com) or within a private registry, accessible from Kubernetes/Docker Compose. 
@@ -106,12 +108,12 @@ The attribute `source` currently supports the following delightful options:
 
 | Option | Description |
 | ------- | ----------- |
-| `img` or `docker:img` | The image `img` is downloaded from the Docker for creating the instances |
-| `localhost:5000/myimg` | The image `myimg` is downloaded from a registry running at `localhost:5000` for creating the instances |
+| `img` or `docker:img` | The image `img` is downloaded from the Docker hub |
+| `localhost:5000/myimg` | The image `myimg` is downloaded from a registry running at `localhost:5000` |
 | `img?cmd=/bin/bash` | The image `img` is downloaded and the command specified after the `cmd` parameter is executed when starting the instance |
 | `docker+file://path/to/Dockerfile` | The Dockerfile is used for building an image. The image is registered in a register if the option `-r` is provided at translate/deployment time |
 | `docker+http://path/to/Dockerfile` | The same as before |
 | `docker+file://path/to/file.zip` | The file is uncompressed and a Dockerfile searched in the root folder. If it is found then it is used for building an image. The image is registered in a register if the option `-r` is provided at translate/deployment time |
 | `docker+http://path/to/file.zip` | The same as before |
 
-If the image must be built, then a new folder `./build` is created automatically with all the resources required for building a given component source.
+If the image must be built, then a new folder `./build` is created automatically with all the resources required for building the given component source.
