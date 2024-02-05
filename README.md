@@ -46,7 +46,7 @@ Experimental tool for [validating](#validation), [translating](#translation) and
 
 To use this tool, [Node.js](https://nodejs.org/) must be previously installed (v.20 has been used for testing). To deploy models to Kubernetes and Docker Compose, both `kubectl` and `docker compose` commands must be available and correctly configured in the command line. 
 
-The following lines describe the Deployer tool usage. All commands must be executed from the repository root folder.
+The following lines describe the Deployer tool usage. All commands must be executed from this repository root folder.
 
 ### Validation
 
