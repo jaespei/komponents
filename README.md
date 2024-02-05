@@ -44,7 +44,7 @@ These patterns can be easily deployed to both [Kubernetes](https://kubernetes.io
 ## The Deployer
 Experimental tool for [validating](#validation), [translating](#translation) and [deploying](#deployment) microservice-based applications described using our [modeling language](#the-modeling-language). 
 
-To use this tool, [Node.js](https://nodejs.org/) must be previously installed. To deploy models to Kubernetes and Docker Compose, both `kubectl` and `docker compose` commands must be available and correctly configured in the command line. 
+To use this tool, [Node.js](https://nodejs.org/) must be previously installed (v.20 has been used for testing). To deploy models to Kubernetes and Docker Compose, both `kubectl` and `docker compose` commands must be available and correctly configured in the command line. 
 
 The following lines describe the Deployer tool usage. All commands must be executed from the repository root folder.
 
