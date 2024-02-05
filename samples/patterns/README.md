@@ -1,5 +1,5 @@
 ## About Design Patterns
-Best practices recommend to apply popular design patterns as building blocks for microservices-based architectures.
+Best practices recommend to apply popular design patterns as building blocks for microservice-based architectures.
 
 This section provides a foundational toolbox for modeling many of these patterns using our modeling language.
 
