@@ -8,7 +8,7 @@ In this section three related JSON Schema documents are provided:
 - [composite.json](./composite.json): describes the syntax of a composite component specification.
 - [basic.json](./basic.json): describes the syntax of a basic component specification.
 
-To help better understand the languagem we provide a BNF-like specification in the following lines:
+To help better understand the language we provide a BNF-like specification in the following lines:
 
 ```
 <deployment> ::=
