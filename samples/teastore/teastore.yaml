@@ -1,0 +1,147 @@
+type: deployment
+name: teastore
+entrypoints:
+  in:
+    protocol: tcp:30000
+    mapping: webui
+model:
+  type: composite
+  imports:
+    Db:
+      name: Db
+      type: basic
+      runtime: docker
+      source: localhost:5000/teastore-db
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:3306
+    Persistence:
+      name: Persistence
+      type: basic
+      runtime: docker
+      source: localhost:5000/teastore-persistence
+      variables:
+        HOST_NAME: teastore-persistence
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:8080
+        db:
+          type: out
+          protocol: tcp:3306
+    Auth:
+      name: Auth
+      type: basic
+      runtime: docker
+      source: localhost:5000/teastore-auth
+      variables:
+        HOST_NAME: teastore-auth
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:8080
+        persistence:
+          type: out
+          protocol: tcp:8080
+    Image:
+      name: Image
+      type: basic
+      runtime: docker
+      source: localhost:5000/teastore-image
+      variables:
+        HOST_NAME: teastore-image
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:8080
+        persistence:
+          type: out
+          protocol: tcp:8080
+    Recommender:
+      name: Recommender
+      type: basic
+      runtime: docker
+      source: localhost:5000/teastore-recommender
+      variables:
+        HOST_NAME: teastore-recommender
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:8080
+        persistence:
+          type: out
+          protocol: tcp:8080
+    WebUI: 
+      name: webui
+      type: basic
+      runtime: docker
+      source: localhost:5000/teastore-webui
+      variables:
+        HOST_NAME: teastore-webui
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:8080
+        image:
+          type: out
+          protocol: tcp:8080
+        auth:
+          type: out
+          protocol: tcp:8080
+        recommender:
+          type: out
+          protocol: tcp:8080
+        persistence:
+          type: out
+          protocol: tcp:8080
+  subcomponents:
+    db: Db
+    persistence: Persistence
+    auth: Auth
+    image: Image
+    recommender: Recommender
+    webui: WebUI
+  connectors:
+    lb:
+      type: LoadBalancer
+      outputs:
+        - webui.in
+    lb-auth: 
+      type: LoadBalancer
+      inputs:
+        - webui.auth
+      outputs:
+        - auth.in
+    lb-image: 
+      type: LoadBalancer
+      inputs:
+        - webui.image
+      outputs:
+        - image.in    
+    lb-recommender: 
+      type: LoadBalancer
+      inputs:
+        - webui.recommender
+      outputs:
+        - recommender.in
+    lb-persistence: 
+      type: LoadBalancer
+      inputs:
+        - webui.persistence
+        - auth.persistence
+        - recommender.persistence
+        - image.persistence
+      outputs:
+        - persistence.in
+    lk-persistence-db:
+      type: Link
+      inputs:
+        - persistence.db
+      outputs:
+        - db.in  
+  endpoints:
+    webui:
+      type: in
+      protocol: tcp:8080
+      mapping: lb

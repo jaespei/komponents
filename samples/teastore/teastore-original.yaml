@@ -1,0 +1,224 @@
+type: deployment
+name: teastore
+entrypoints:
+  in:
+    protocol: tcp:30000
+    mapping: webui
+model:
+  type: composite
+  imports:
+    Registry:
+      name: Registry
+      type: basic
+      runtime: docker
+      source: descartesresearch/teastore-registry
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:8080
+    Db:
+      name: Db
+      type: basic
+      runtime: docker
+      source: descartesresearch/teastore-db
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:3306
+    Persistence:
+      name: Persistence
+      type: basic
+      runtime: docker
+      source: descartesresearch/teastore-persistence
+      variables:
+        HOST_NAME: teastore-persistence
+        REGISTRY_HOST: teastore-registry
+        DB_HOST: teastore-db
+        DB_PORT: 3306
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:8080
+        registry:
+          type: out
+          protocol: tcp:8080
+        db:
+          type: out
+          protocol: tcp:3306
+    Auth:
+      name: Auth
+      type: basic
+      runtime: docker
+      source: descartesresearch/teastore-auth
+      variables:
+        HOST_NAME: teastore-auth
+        REGISTRY_HOST: teastore-registry
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:8080
+        registry:
+          type: out
+          protocol: tcp:8080
+        persistence:
+          type: out
+          protocol: tcp:8080
+    Image:
+      name: Image
+      type: basic
+      runtime: docker
+      source: descartesresearch/teastore-image
+      variables:
+        HOST_NAME: teastore-image
+        REGISTRY_HOST: teastore-registry
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:8080
+        registry:
+          type: out
+          protocol: tcp:8080
+        persistence:
+          type: out
+          protocol: tcp:8080
+    Recommender:
+      name: Recommender
+      type: basic
+      runtime: docker
+      source: descartesresearch/teastore-recommender
+      variables:
+        HOST_NAME: teastore-recommender
+        REGISTRY_HOST: teastore-registry
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:8080
+        registry:
+          type: out
+          protocol: tcp:8080
+        persistence:
+          type: out
+          protocol: tcp:8080
+    WebUI: 
+      name: webui
+      type: basic
+      runtime: docker
+      source: descartesresearch/teastore-webui
+      variables:
+        HOST_NAME: teastore-webui
+        REGISTRY_HOST: teastore-registry
+      endpoints:
+        in:
+          type: in
+          protocol: tcp:8080
+        registry:
+          type: out
+          protocol: tcp:8080
+        image:
+          type: out
+          protocol: tcp:8080
+        auth:
+          type: out
+          protocol: tcp:8080
+        recommender:
+          type: out
+          protocol: tcp:8080
+        persistence:
+          type: out
+          protocol: tcp:8080
+  subcomponents:
+    registry: Registry
+    db: Db
+    persistence: Persistence
+    auth: Auth
+    image: Image
+    recommender: Recommender
+    webui: WebUI
+  connectors:
+    lb:
+      type: LoadBalancer
+      outputs:
+        - webui.in
+    lk-webui-registry: 
+      type: Link
+      inputs:
+        - webui.registry
+      outputs:
+        - registry.in
+    lk-webui-image: 
+      type: Link
+      inputs:
+        - webui.image
+      outputs:
+        - image.in
+    lk-webui-auth: 
+      type: Link
+      inputs:
+        - webui.auth
+      outputs:
+        - auth.in
+    lk-webui-persistence: 
+      type: Link
+      inputs:
+        - webui.persistence
+      outputs:
+        - persistence.in
+    lk-webui-recommender: 
+      type: Link
+      inputs:
+        - webui.recommender
+      outputs:
+        - recommender.in
+    lk-image-registry: 
+      type: Link
+      inputs:
+        - image.registry
+      outputs:
+        - registry.in
+    lk-image-persistence: 
+      type: Link
+      inputs:
+        - image.persistence
+      outputs:
+        - persistence.in
+    lk-auth-registry: 
+      type: Link
+      inputs:
+        - auth.registry
+      outputs:
+        - registry.in
+    lk-auth-persistence: 
+      type: Link
+      inputs:
+        - auth.persistence
+      outputs:
+        - persistence.in
+    lk-persistence-registry: 
+      type: Link
+      inputs:
+        - persistence.registry
+      outputs:
+        - registry.in
+    lk-persistence-db: 
+      type: Link
+      inputs:
+        - persistence.db
+      outputs:
+        - db.in
+    lk-recommender-registry: 
+      type: Link
+      inputs:
+        - recommender.registry
+      outputs:
+        - registry.in
+    lk-recommender-persistence: 
+      type: Link
+      inputs:
+        - recommender.persistence
+      outputs:
+        - persistence.in
+  endpoints:
+    webui:
+      type: in
+      protocol: tcp:8080
+      mapping: lb

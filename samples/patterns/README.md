@@ -42,7 +42,7 @@ $ npm run deploy -- samples/patterns/gateway.yaml
 $ npm run deploy -- samples/patterns/gateway.yaml -t compose
 ```
 
-Then, open a browser a point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/).
+Then, open a browser and point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/).
 
 You will be able to access Service 1 through URL [http://127.0.0.1:30000/service1](http://127.0.0.1:30000/service1).
 
@@ -72,7 +72,7 @@ $ npm run deploy -- samples/patterns/load-balancer.yaml
 $ npm run deploy -- samples/patterns/load-balancer.yaml -t compose
 ```
 
-Then, open a browser a point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/). 
+Then, open a browser and point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/). 
 
 It will automatically redirect requests.
 
@@ -100,7 +100,7 @@ $ npm run deploy -- samples/patterns/circuit-breaker.yaml
 $ npm run deploy -- samples/patterns/circuit-breaker.yaml -t compose
 ```
 
-Then, open a browser a point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/). 
+Then, open a browser and point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/). 
 
 You will access the protected service. Then you will be able to simulate the service failure, and you will experience the circuit breaker opening, and closing again after some time.
 
@@ -128,7 +128,7 @@ $ npm run deploy -- samples/patterns/client-side-service-discovery.yaml
 $ npm run deploy -- samples/patterns/client-side-service-discovery.yaml -t compose
 ```
 
-Then, open a browser a point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/).
+Then, open a browser and point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/).
 
 You will see how the client discovers all connected peers, and you will be able to access them.
 
@@ -156,7 +156,7 @@ $ npm run deploy -- samples/patterns/server-side-service-discovery.yaml
 $ npm run deploy -- samples/patterns/server-side-service-discovery.yaml -t compose
 ```
 
-Then, open a browser a point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/).
+Then, open a browser and point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/).
 
 You will see how the client discovers automatically the load balancer, and you will be able to access the connected peers.
 
@@ -184,7 +184,7 @@ $ npm run deploy -- samples/patterns/database-per-service.yaml
 $ npm run deploy -- samples/patterns/database-per-service.yaml -t compose
 ```
 
-Then, open a browser a point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/).
+Then, open a browser and point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/).
 
 You will be able to store information in the database and it will be automatically refreshed.
 
@@ -212,7 +212,7 @@ $ npm run deploy -- samples/patterns/shared-database.yaml
 $ npm run deploy -- samples/patterns/shared-database.yaml -t compose
 ```
 
-Then, open a browser a point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/).
+Then, open a browser and point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/).
 
 You will be able to store information in the database and it will be automatically refreshed.
 
@@ -240,7 +240,7 @@ $ npm run deploy -- samples/patterns/event-driven-architecture.yaml
 $ npm run deploy -- samples/patterns/event-driven-architecture.yaml -t compose
 ```
 
-Then, open a browser a point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/), to see the publisher.
+Then, open a browser and point to [http://127.0.0.1:30000/](http://127.0.0.1:30000/), to see the publisher.
 
 Then, open another browser a point to [http://127.0.0.1:30001/](http://127.0.0.1:30001/), to see the subscriber.
 
