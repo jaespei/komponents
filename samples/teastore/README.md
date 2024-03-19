@@ -71,68 +71,6 @@ Therefore, to deploy the model follow the next instructions:
     $ npm run deploy -- samples/teastore/teastore.yaml
     # Deploy to Docker Compose
     $ npm run deploy -- samples/teastore/teastore.yaml -t compose
-
-
-Next we list the required instructions, which have been partially obtained from [the TeaStore GitHub repository](https://github.com/DescartesResearch/TeaStore/blob/master/GET_STARTED.md):
-
-1. From the root folder, clone the [original repository](https://github.com/DescartesResearch/TeaStore)
-    
-    ```bash
-    $ git clone https://github.com/DescartesResearch/TeaStore.git
     ```
 
-2. Copy the three modified files to the original repository
-
-    ```bash
-    $ cp -r samples/teastore/utilities TeaStore/
-    ```
-
-3. Build the code (JDK and Maven are required)
-
-    ```bash
-    $ cd TeaStore
-    $ mvn clean install -DskipTests
-    ```
-
-4. Build docker images
-
-    ```bash
-    $ cd tools
-    $ ./build_docker.sh
-    ```
-
-5. Start local private Docker registry
-
-    ```bash
-    $ docker run -d -p 5000:5000 --name registry registry:2
-    ```
-
-6. Push local images to the private Docker registry
-
-    ```bash
-    $ docker tag descartesresearch/teastore-db localhost:5000/teastore-db
-    $ docker push localhost:5000/teastore-db
-    $ docker tag descartesresearch/teastore-persistence localhost:5000/teastore-persistence
-    $ docker push localhost:5000/teastore-persistence
-    $ docker tag descartesresearch/teastore-auth localhost:5000/teastore-auth
-    $ docker push localhost:5000/teastore-auth
-    $ docker tag descartesresearch/teastore-webui localhost:5000/teastore-webui
-    $ docker push localhost:5000/teastore-webui
-    $ docker tag descartesresearch/teastore-image localhost:5000/teastore-image
-    $ docker push localhost:5000/teastore-image
-    $ docker tag descartesresearch/teastore-recommender localhost:5000/teastore-recommender
-    $ docker push localhost:5000/teastore-recommender
-    ```
-
-7. Deploy the model
-
-    ```bash
-    $ cd ../..
-    # Deploy to Kubernetes
-    $ npm run deploy -- samples/teastore/teastore.yaml
-    # Deploy to Docker Compose
-    $ npm run deploy -- samples/teastore/teastore.yaml -t compose
-    ```
-
-
-
+After a while (the database must be populated) the application will be available in [http://127.0.0.1:30000/](http://127.0.0.1:30000/).
