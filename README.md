@@ -6,6 +6,7 @@ Tools and technologies aimed at modeling and deploying microservice-based applic
 - [Getting started](#getting-started)
 - [The Modeling Language](#the-modeling-language)
 - [Design Patterns](#design-patterns)
+- [TeaStore](#teastore)
 - [The Deployer](#the-deployer)
 - [The Components source](#the-components-source)
 
@@ -40,6 +41,9 @@ We encourage researchers and enthusiasts to download the schemas and validate th
 To demonstrate the applicability of the modeling language, common microservice design patterns have been modeled and are available [here](./samples/patterns/README.md). 
 
 These patterns can be easily deployed to both [Kubernetes](https://kubernetes.io/) and [Docker Compose](https://www.docker.com/) using [the Deployer tool](#the-deployer).
+
+## TeaStore
+The modeling language has been used to model a microservice reference application called TeaStore. All the details about it can be found [here](./samples/teastore/README.md).
 
 ## The Deployer
 Experimental tool for [validating](#validation), [translating](#translation) and [deploying](#deployment) microservice-based applications described using our [modeling language](#the-modeling-language). 
