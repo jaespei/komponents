@@ -58,9 +58,9 @@ public class RegistryClient {
   private String hostName = null;
   private Integer port = null;
 
-  // ---------- added by https://github.com/jaespei/komponents
+  // ---------- added by https://github.com/jaespei/komponents ----------
   private java.util.HashMap<String,String> env = new java.util.HashMap<String,String>(); 
-  // ---------- added by https://github.com/jaespei/komponents
+  // ---------- added by https://github.com/jaespei/komponents ----------
 
   private Server myServiceInstanceServer = null;
   private Service myService = null;
@@ -112,7 +112,7 @@ public class RegistryClient {
           + "/tools.descartes.teastore.registry/rest/services/";
     }
 
-    // ---------- added by https://github.com/jaespei/komponents
+    // ---------- added by https://github.com/jaespei/komponents ----------
     String[] services = {"auth", "recommender", "image", "persistence"};
     for (String service: services) {
       try {
@@ -124,7 +124,7 @@ public class RegistryClient {
         LOG.warn(service + "Host not set.");
       }
     }
-    // ---------- added by https://github.com/jaespei/komponents
+    // ---------- added by https://github.com/jaespei/komponents ----------
   }
 
   /**
@@ -147,20 +147,20 @@ public class RegistryClient {
     Service service = getService(contextPath);
     Server host = getServer();
     LOG.info("Shutting down " + service.getServiceName() + "@" + host);
-    // ---------- commented by https://github.com/jaespei/komponents
+    // ---------- commented by https://github.com/jaespei/komponents ----------
     /*heartbeatScheduler.shutdownNow();*/
-    // ---------- commented by https://github.com/jaespei/komponents
+    // ---------- commented by https://github.com/jaespei/komponents ----------
     loadBalancerUpdateScheduler.shutdownNow();
     availabilityScheduler.shutdownNow();
     try {
       loadBalancerUpdateScheduler.awaitTermination(20, TimeUnit.SECONDS);
-      // ---------- commented by https://github.com/jaespei/komponents
+      // ---------- commented by https://github.com/jaespei/komponents ----------
       /*heartbeatScheduler.awaitTermination(20, TimeUnit.SECONDS);*/
-      // ---------- commented by https://github.com/jaespei/komponents
+      // ---------- commented by https://github.com/jaespei/komponents ----------
       availabilityScheduler.awaitTermination(20, TimeUnit.SECONDS);
-      // ---------- commented by https://github.com/jaespei/komponents
+      // ---------- commented by https://github.com/jaespei/komponents ----------
       /*RegistryClient.client.unregisterOnce(service, host);*/
-      // ---------- commented by https://github.com/jaespei/komponents
+      // ---------- commented by https://github.com/jaespei/komponents ----------
     } catch (ProcessingException e) {
       LOG.warn("Could not unregister " + service.getServiceName() + " when it was shutting "
           + "down, since it could not reach the registry. This can be caused by shutting "
@@ -178,12 +178,12 @@ public class RegistryClient {
    *          { return event.getServletContext().getContextPath(); }
    */
   public void register(String contextPath) {
-    // ---------- commented by https://github.com/jaespei/komponents
+    // ---------- commented by https://github.com/jaespei/komponents ----------
     /*Service service = getService(contextPath);
     Server host = getServer();
     heartbeatScheduler.scheduleAtFixedRate(new RegistryClientHeartbeatDaemon(service, host), 0,
         HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);*/
-    // ---------- commented by https://github.com/jaespei/komponents
+    // ---------- commented by https://github.com/jaespei/komponents ----------
     loadBalancerUpdateScheduler.scheduleAtFixedRate(new LoadBalancerUpdaterDaemon(), 1000,
         LOAD_BALANCER_REFRESH_INTERVAL_MS, TimeUnit.MILLISECONDS);
   }
@@ -216,7 +216,7 @@ public class RegistryClient {
     List<String> list = null;
     List<Server> serverList = new ArrayList<Server>();
 
-    // ---------- commented by https://github.com/jaespei/komponents
+    // ---------- commented by https://github.com/jaespei/komponents ----------
     /*try {
       Response response = getRESTClient(5000).target(registryRESTURL)
           .path("/" + targetService.getServiceName() + "/").request(MediaType.APPLICATION_JSON)
@@ -226,10 +226,10 @@ public class RegistryClient {
     } catch (ProcessingException e) {
       return null;
     }*/
-    // ---------- commented by https://github.com/jaespei/komponents
+    // ---------- commented by https://github.com/jaespei/komponents ----------
 
 
-    // ---------- added by https://github.com/jaespei/komponents
+    // ---------- added by https://github.com/jaespei/komponents ----------
     try {
       String[] names = targetService.getServiceName().split("\\.");
       String serviceName = names[names.length-1];
@@ -239,7 +239,7 @@ public class RegistryClient {
       e.printStackTrace();
       return null;
     }
-    // ---------- added by https://github.com/jaespei/komponents
+    // ---------- added by https://github.com/jaespei/komponents ----------
 
     if (list != null) {
       for (String string : list) {

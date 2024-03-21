@@ -27,7 +27,7 @@
 	<Environment name="recommenderAlgorithm" value="SlopeOne"
     	type="java.lang.String" override="false"/>
     	
-     <!-- Komponents. -->
+     <!-- added by https://github.com/jaespei/komponents -->
     <Environment name="authHost" value="%%PLACEHOLDER%%" 
         type="java.lang.String" override="false"/>
     <Environment name="authPort" value="%%PLACEHOLDER%%" 
@@ -44,6 +44,7 @@
         type="java.lang.String" override="false"/>
     <Environment name="recommenderPort" value="%%PLACEHOLDER%%" 
         type="java.lang.String" override="false"/>
+    <!-- added by https://github.com/jaespei/komponents -->
 
     <!-- General Tomcat setting: disable session persistence; improves startup times. -->
     <Manager pathname="" />

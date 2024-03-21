@@ -1,5 +1,5 @@
 #!/bin/bash
-# Komponents/ ----
+# ---- added by https://github.com/jaespei/komponents -----
 sed -i "s/<Environment name=\"authHost\" value=.*/<Environment name=\"authHost\" value=\"${AUTH_DNS}\"/g" /usr/local/tomcat/conf/context.xml
 sed -i "s/<Environment name=\"authPort\" value=.*/<Environment name=\"authPort\" value=\"${AUTH_PORT}\"/g" /usr/local/tomcat/conf/context.xml
 sed -i "s/<Environment name=\"imageHost\" value=.*/<Environment name=\"imageHost\" value=\"${IMAGE_DNS}\"/g" /usr/local/tomcat/conf/context.xml
@@ -10,7 +10,7 @@ sed -i "s/<Environment name=\"persistenceHost\" value=.*/<Environment name=\"per
 sed -i "s/<Environment name=\"persistencePort\" value=.*/<Environment name=\"persistencePort\" value=\"${PERSISTENCE_PORT}\"/g" /usr/local/tomcat/conf/context.xml
 sed -i "s/<Environment name=\"databaseHost\" value=.*/<Environment name=\"databaseHost\" value=\"${DB_DNS}\"/g" /usr/local/tomcat/conf/context.xml
 sed -i "s/<Environment name=\"databasePort\" value=.*/<Environment name=\"databasePort\" value=\"${DB_PORT}\"/g" /usr/local/tomcat/conf/context.xml
-# /Komponents ----
+# ---- added by https://github.com/jaespei/komponents -----
 
 # DANGER! MAKE SURE THIS FILE HAS UNIX-STYLE LINE-ENDINGS OR THE DOCKER CONTAINER WILL NOT START!
 sed -i "s/<Environment name=\"servicePort\" value=.*/<Environment name=\"servicePort\" value=\"${SERVICE_PORT}\"/g" /usr/local/tomcat/conf/context.xml
@@ -33,8 +33,10 @@ else
 	sed -i "/Environment name=\"hostName\"/d" /usr/local/tomcat/conf/context.xml
 fi
 sed -i "s|<Environment name=\"useHostIP\" value=.*|<Environment name=\"useHostIP\" value=\"${USE_POD_IP}\"|g" /usr/local/tomcat/conf/context.xml
+# ---- commented by https://github.com/jaespei/komponents ----
 #sed -i "s/<Environment name=\"databaseHost\" value=.*/<Environment name=\"databaseHost\" value=\"${DB_HOST}\"/g" /usr/local/tomcat/conf/context.xml
 #sed -i "s/<Environment name=\"databasePort\" value=.*/<Environment name=\"databasePort\" value=\"${DB_PORT}\"/g" /usr/local/tomcat/conf/context.xml
+# ---- commented by https://github.com/jaespei/komponents ----
 sed -i "s/<Environment name=\"recommenderLoopTime\" value=.*/<Environment name=\"recommenderLoopTime\" value=\"${RECOMMENDER_RETRAIN_LOOP_TIME}\"/g" /usr/local/tomcat/conf/context.xml
 sed -i "s/<Environment name=\"recommenderAlgorithm\" value=.*/<Environment name=\"recommenderAlgorithm\" value=\"${RECOMMENDER_ALGORITHM}\"/g" /usr/local/tomcat/conf/context.xml
 if [ "$PROXY_NAME" != "unset" ] && [ "$PROXY_PORT" != "unset" ]
