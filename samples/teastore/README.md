@@ -12,7 +12,7 @@ TeaStore is an amazing application first published in:
 
  > Jóakim von Kistowski and Simon Eismann and Norbert Schmitt and André Bauer and Johannes Grohmann and Samuel Kounev. TeaStore: A Micro-Service Reference Application for Benchmarking, Modeling and Resource Management Research. Proceedings of the 26th IEEE International Symposium on the Modelling, Analysis, and Simulation of Computer and Telecommunication Systems. 2018.
 
-There is an implementation of this application available in the Github repository:
+There is an implementation of this application available in the GitHub repository:
 
 > [https://github.com/DescartesResearch/TeaStore](https://github.com/DescartesResearch/TeaStore)
 
@@ -39,7 +39,7 @@ After a while (the database must be populated) the application will be available
 
 Here we provide a second version of the model. In our opinion, this model describes more accurately the application architecture. On the one hand it defines the real microservice dependencies, which are connected through load balancer connectors. On the other hand it removes infrastructure-related details, like the registry pattern for solving the service discovery problem. This specification is available in [teastore.yaml](./teastore.yaml).
 
-Deploying this model with [the Deployer tool](../../README.md#the-deployer) is a little bit more involved since some minimal code from the original [TeaStore GitHub](https://github.com/DescartesResearch/TeaStore) repository must be changed. In particular, the code devoted to solve service references using the registry pattern. This just involves modifying the three files: [baseContext.xml](./src/utilities/tools.descartes.teastore.dockerbase/baseContext.xml), [start.sh](./src/utilities/tools.descartes.teastore.dockerbase/start.sh) and [RegistryClient.java](./src/utilities/tools.descartes.teastore.registryclient/src/main/java/tools/descartes/teastore/registryclient/RegistryClient.java). This means the container images must be rebuild with the new code, and registered within a private registry. After that, the model can be regularly deployed. 
+Deploying this model with [the Deployer tool](../../README.md#the-deployer) is a little bit more involved since some minimal code in the original [TeaStore GitHub](https://github.com/DescartesResearch/TeaStore) repository must be changed. In particular, the code devoted to solve service references using the registry pattern. This just involves modifying three files: [baseContext.xml](./src/utilities/tools.descartes.teastore.dockerbase/baseContext.xml), [start.sh](./src/utilities/tools.descartes.teastore.dockerbase/start.sh) and [RegistryClient.java](./src/utilities/tools.descartes.teastore.registryclient/src/main/java/tools/descartes/teastore/registryclient/RegistryClient.java). This means the container images must be rebuilt with the new code, and registered within a private registry. After that, the model can be regularly deployed. 
 
 To simplify the process we provide the script [build.sh](./build.sh), which automates the following steps:
 1. Clones the [original repository](https://github.com/DescartesResearch/TeaStore)
