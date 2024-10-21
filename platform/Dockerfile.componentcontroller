@@ -1,0 +1,17 @@
+FROM node:16
+LABEL org.opencontainers.image.authors="jesparza@dsic.upv.es"
+LABEL description="Komponents Component Controller"
+EXPOSE 9000
+
+COPY componentcontroller /app/componentcontroller/
+COPY store /app/store/
+COPY utils /app/utils/
+
+RUN cd /app/utils && npm install
+RUN cd /app/store && npm install
+
+WORKDIR /app/componentcontroller
+
+RUN npm install
+
+ENTRYPOINT node src/cli start

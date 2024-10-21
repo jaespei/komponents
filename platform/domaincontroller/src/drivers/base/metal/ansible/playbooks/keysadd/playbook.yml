@@ -1,0 +1,58 @@
+---
+# Variables:
+# - var_workingDir
+# - var_privateKey
+# - var_publicKey
+#
+# Requirements: 
+# - OpenSSH installed in localhost
+#
+
+# ------------------------------
+#  Prepare local machine
+# ------------------------------
+- name: Add new keypair
+  hosts: localhost
+  connection: local
+  tasks:
+#    - name: Install OpenSSH
+#      apt: name=openssh-server state=present update_cache=yes
+#      become: yes
+
+    - name: Create working dir
+      file:
+        path: "{{ var_workingDir }}"
+        state: directory
+
+    - name: Generate domain key path
+      when: var_privateKey is not defined
+      set_fact: 
+        var_privateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
+
+    - name: Generate SSH keys
+      when: var_privateKey is undefined
+      openssh_keypair:
+        path: "{{ var_privateKeyPath }}"
+        type: rsa
+        size: 4096
+        state: present
+
+    - name: KOMPONENTS_RESULT
+      set_fact: 
+        result:
+          privateKey: "{{ var_privateKey if var_privateKey is defined else lookup('file', '{{ var_privateKeyPath }}', rstrip=False) }}"
+          publicKey: "{{ var_publicKey if var_publicKey is defined else lookup('file', '{{ var_privateKeyPath }}.pub', rstrip=False) }}"
+
+    - name: Clean-up keys
+      when: var_privateKey is not defined
+      file: 
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ var_privateKeyPath }}"
+        - "{{ var_privateKeyPath }}.pub"
+
+    
+
+    - name: Print result
+      debug: var=hostvars

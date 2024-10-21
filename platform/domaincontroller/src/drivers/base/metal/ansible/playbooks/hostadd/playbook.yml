@@ -1,0 +1,164 @@
+---
+# Variables:
+# - var_workingDir
+# - var_domainPrivateKey
+# - var_domainPublicKey: 
+# - var_domainUser:
+# - var_hostAddr: 
+# - var_hostPrivateKey:
+# - var_hostUser:
+# - var_hostPassword:
+#
+# Requirements: 
+# - Ansible collection ansibe.posix
+#
+
+# ------------------------------
+#  Prepare host connection
+# ------------------------------
+- name: Prepare host connection
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Create working dir
+      file:
+        path: "{{ var_workingDir }}"
+        state: directory
+
+    - name: Set domain private key path
+      when: var_domainPrivateKey is defined
+      set_fact: 
+        var_domainPrivateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
+
+    - name: Write temporal domain private key locally
+      when: var_domainPrivateKey is defined
+      copy:
+        content: "{{ var_domainPrivateKey }}"
+        dest: "{{ var_domainPrivateKeyPath }}"
+        mode: "600"
+
+    - name: Write temporal domain public key locally
+      when: var_domainPublicKey is defined
+      copy:
+        content: "{{ var_domainPublicKey }}"
+        dest: "{{ var_domainPrivateKeyPath }}.pub"
+
+    - name: Set host private key path
+      when: var_hostPrivateKey is defined
+      set_fact: 
+        var_hostPrivateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
+
+    - name: Write temporal host private key locally
+      when: var_hostPrivateKey is defined
+      copy:
+        content: "{{ var_hostPrivateKey }}"
+        dest: "{{ var_hostPrivateKeyPath }}"
+        mode: "600"
+
+    - name: Add in-mem host
+      add_host:
+        name: host
+        ansible_host: "{{ var_hostAddr }}"
+        ansible_user: "{{ var_hostUser }}"
+        ansible_password: "{{ var_hostPassword | default(omit) }}"
+        ansible_ssh_private_key_file: "{{ var_hostPrivateKeyPath | default(omit) }}"
+      changed_when: false
+
+# ------------------------------
+#  Add new host
+# ------------------------------
+- name: Add new host
+  hosts: host
+  vars: 
+    ansible_become_pass: "{{ var_hostPassword }}"
+  tasks:
+
+    - name: Install required software
+      become: yes
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        name: "{{ item }}"
+      with_items:
+        - sudo
+
+    - name: Add sudoers group
+      become: yes
+      group: 
+        name: sudo
+        state: present
+
+    - name: Add domain user
+      become: yes
+      user:
+        name: "{{ var_domainUser }}"
+        shell: /bin/bash
+        groups: sudo
+        append: yes
+        createhome: yes
+        state: present
+
+    - name: Add domain user to sudoers
+      become: yes
+      lineinfile: 
+        dest: "/etc/sudoers"
+        state: "present"
+        regexp: "^{{ var_domainUser }}"
+        line: "{{ var_domainUser }} ALL=(ALL:ALL) NOPASSWD: ALL"
+      
+    - name: Add domain key
+      become: yes
+      ansible.posix.authorized_key:
+        user: "{{ var_domainUser }}"
+        state: present
+        key: "{{ lookup('file', '{{ hostvars.localhost.var_domainPrivateKeyPath }}.pub', rstrip=False) }}"
+
+    - name: KOMPONENTS_RESULT
+      set_fact:
+        result:
+          hostname: "{{ ansible_hostname }}"
+          mem: "{{ ansible_memtotal_mb }}"
+          cpu: "{{ ansible_processor_cores }}"
+          ifaces: "{{ ansible_facts | dict2items | selectattr('key','in', ansible_facts.interfaces) | list | items2dict }}"
+          iface: "{{ ansible_default_ipv4 }}"
+          os: 
+            name: "{{ ansible_distribution }}"
+            version: "{{ ansible_distribution_version }}"
+#          devs: "{{ ansible_facts.devices | dict2items | selectattr('key','in', ansible_facts.device_links.ids.keys()) | list | items2dict }}"
+          kernel: "{{ ansible_kernel }}"
+
+#   - name: Obtain devices
+#     set_fact:
+#        result:
+#          devs: "{{ result.devs|default([]) + [{'dev': item, 'size': ansible_facts.devices[item].size }] }}"
+#      vars: 
+#        dev_names: "{{ ansible_facts.devices.keys() | select('in', ansible_facts.device_links.ids.keys()) | list }}"
+#      loop: "{{ dev_names }}"
+
+#    - debug: var=hostvars
+
+# ------------------------------
+#  Clean-up host connection
+# ------------------------------
+- name: Clean-up host connection
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Delete domain private key
+      when: var_domainPrivateKey is defined
+      file: 
+        path: "{{ var_domainPrivateKeyPath }}"
+        state: absent
+
+    - name: Delete domain public key
+      when: var_domainPublicKey is defined
+      file: 
+        path: "{{ var_domainPrivateKeyPath }}.pub"
+        state: absent
+    
+    - name: Delete host private key
+      when: var_hostPrivateKey is defined
+      file: 
+        path: "{{ var_hostPrivateKeyPath }}"
+        state: absent
+    

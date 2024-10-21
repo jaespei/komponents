@@ -1,0 +1,25 @@
+{
+  "name": "domaincontroller",
+  "version": "1.0.0",
+  "description": "Domain Controller in the Komponents platform",
+  "main": "src/cli.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Javier Esparza-Peidro <jesparza@dsic.upv.es>",
+  "license": "ISC",
+  "dependencies": {
+    "@kubernetes/client-node": "^0.14.3",
+    "axios": "^0.21.1",
+    "body-parser": "^1.19.0",
+    "eventemitter2": "^6.4.4",
+    "express": "^4.17.1",
+    "lev2": "^7.2.3",
+    "lodash": "^4.17.21",
+    "memory-streams": "^0.1.3",
+    "node-ansible": "^0.5.5",
+    "q": "^1.5.1",
+    "store": "file:../store",
+    "utils": "file:../utils"
+  }
+}

@@ -1,0 +1,40 @@
+services:
+  domaincontroller:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.domaincontroller
+    environment: 
+      HOST: 0.0.0.0:10000
+    ports:
+      - "10000:10000"
+  componentcontroller:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.componentcontroller
+    environment:
+      HOST: 0.0.0.0:9000
+      DOMAIN_HOST: domaincontroller:10000    
+    ports:
+      - "9000:9000"
+    depends_on:
+      - domaincontroller
+  realmcontroller:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.realmcontroller
+    environment:
+      HOST: 0.0.0.0:8000
+      DOMAIN_HOST: domaincontroller:10000
+      COMPONENT_HOST: componentcontroller:9000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - componentcontroller
+  dashboard:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.dashboard
+    ports:
+      - "8080:8080"
+    depends_on:
+      - realmcontroller

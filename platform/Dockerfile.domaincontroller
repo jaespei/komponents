@@ -1,0 +1,30 @@
+FROM debian:bookworm
+LABEL org.opencontainers.image.authors="jesparza@dsic.upv.es"
+LABEL description="Komponents Domain Controller"
+EXPOSE 10000
+
+RUN apt update && apt install -y python3 ansible curl sshpass
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+RUN export NVM_DIR="$HOME/.nvm" &&  \
+    [ -s "$NVM_DIR/nvm.sh" ] && \
+    \. "$NVM_DIR/nvm.sh" && \
+    [ -s "$NVM_DIR/bash_completion" ] && \
+    \. "$NVM_DIR/bash_completion" && \
+    nvm install 16
+
+COPY domaincontroller /app/domaincontroller/
+COPY store /app/store/
+COPY utils /app/utils/
+
+RUN export NVM_DIR="$HOME/.nvm" &&  \
+    [ -s "$NVM_DIR/nvm.sh" ] && \
+    \. "$NVM_DIR/nvm.sh" && \
+    [ -s "$NVM_DIR/bash_completion" ] && \
+    \. "$NVM_DIR/bash_completion" && \
+    cd /app/utils &&  npm install && \
+    cd /app/store && npm install && \
+    cd /app/domaincontroller && npm install
+
+WORKDIR /app/domaincontroller
+
+ENTRYPOINT export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && node src/cli start

@@ -1,0 +1,17 @@
+{
+  "name": "utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Javier Esparza-Peidro <jesparza@dsic.upv.es>",
+  "license": "ISC",
+  "dependencies": {
+    "ip": "^1.1.3",
+    "lodash": "^4.13.1",
+    "q": "^1.5.1",
+    "request": "^2.79.0"
+  }
+}

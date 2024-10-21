@@ -1,0 +1,282 @@
+---
+# Variables:
+# - var_workingDir
+# - var_domainPrivateKey (optional)
+# - var_domainPublicKey (optional)
+# - var_domainUser
+# - var_hostAddr
+# - var_hostUser
+# - var_hostPassword (optional)
+# - var_hostPrivateKey (optional)
+# - var_masteNodes
+# - var_workerNodes
+#
+# Requirements: 
+# - OpenSSH installed in localhost
+#
+
+# ------------------------------
+#  Prepare local machine
+# ------------------------------
+- name: Add new domain
+  hosts: localhost
+  connection: local
+  tasks:
+#    - name: Install OpenSSH
+#      apt: name=openssh-server state=present update_cache=yes
+#      become: yes
+
+    - name: Create working dir
+      file:
+        path: "{{ var_workingDir }}"
+        state: directory
+
+    - name: Set domain private key path
+      set_fact: 
+        var_domainPrivateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
+
+    - name: Write temporal domain private key locally
+      when: var_domainPrivateKey is defined
+      copy:
+        content: "{{ var_domainPrivateKey }}"
+        dest: "{{ var_domainPrivateKeyPath }}"
+        mode: "600"
+
+    - name: Write temporal domain public key locally
+      when: var_domainPublicKey is defined
+      copy:
+        content: "{{ var_domainPublicKey }}"
+        dest: "{{ var_domainPrivateKeyPath }}.pub"
+
+    - name: Generate SSH keys
+      when: var_domainPrivateKey is not defined
+      openssh_keypair:
+        path: "{{ var_domainPrivateKeyPath }}"
+        type: rsa
+        size: 4096
+        state: present
+
+    - name: Set host private key path
+      when: var_hostPrivateKey is defined
+      set_fact: 
+        var_hostPrivateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
+
+    - name: Write temporal host private key locally
+      when: var_hostPrivateKey is defined
+      copy:
+        content: "{{ var_hostPrivateKey }}"
+        dest: "{{ var_hostPrivateKeyPath }}"
+        mode: "600"
+
+    - name: Add in-mem host
+      add_host:
+        name: host
+        ansible_host: "{{ var_hostAddr }}"
+        ansible_user: "{{ var_hostUser }}"
+        ansible_password: "{{ var_hostPassword | default(omit) }}"
+        ansible_ssh_private_key_file: "{{ var_hostPrivateKeyPath | default(omit) }}"
+      changed_when: false
+
+# ------------------------------
+#  Configure user
+# -----------------------------
+- name: Configure user
+  hosts: host
+  become: yes
+  tasks:
+
+    - name: Add domain user's groups
+      group: 
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - sudo
+        - docker
+
+    - name: Add domain user
+      user:
+        name: "{{ var_domainUser }}"
+        append: yes
+        groups: sudo, docker
+        createhome: yes
+        state: present        
+
+    - name: Add domain user to sudoers
+      lineinfile: 
+        dest: "/etc/sudoers"
+        state: "present"
+        regexp: "^%{{ var_domainUser }}"
+        line: "%{{ var_domainUser }} ALL=(ALL) NOPASSWD: ALL"
+
+    - name: Add domain key
+      ansible.posix.authorized_key:
+        user: "{{ var_domainUser }}"
+        state: present
+        key: "{{ lookup('file', '{{ hostvars.localhost.var_domainPrivateKeyPath }}.pub', rstrip=False) }}"
+
+    - name: Override in-mem host
+      add_host:
+        name: host
+        ansible_host: "{{ var_hostAddr }}"
+        ansible_user: "{{ var_domainUser }}"
+        ansible_ssh_private_key_file: "{{ hostvars.localhost.var_domainPrivateKeyPath }}"
+
+# ------------------------------
+#  Configure host
+# ------------------------------
+- name: Configure host
+  hosts: host
+  vars: 
+    var_go_tarball: go1.16.3.linux-amd64.tar.gz 
+  tasks:
+
+    - name: Install required tools
+      become: yes
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        name: "{{ item }}"
+      with_items:
+        - sudo
+        - git
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+#        - kubectl
+
+     # ---------- Install docker
+    - name: Add Docker’s official GPG key
+      become: yes
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+
+    - name: Add Docker Repository
+      become: yes
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Update apt and install docker-ce
+      become: yes
+      apt: 
+        update_cache: yes
+        name: "{{ item }}"
+      with_items:
+        - docker-ce
+        - docker-ce-cli 
+        - containerd.io
+
+    # - name: Create Docker's group
+    #   become: yes
+    #   group:
+    #     name: docker
+    #     state: present
+
+    # - name: Add user to Docker's group
+    #   become: yes
+    #   user:
+    #     name: "{{ var_domainUser }}"
+    #     append: yes
+    #     groups: docker
+    #     state: present        
+
+    # ---------- Install Go
+    - name: Download the Go tarball
+      become: yes
+      get_url:
+        url: "https://dl.google.com/go/{{ var_go_tarball }}"
+        dest: "/usr/local/src/{{ var_go_tarball }}"
+
+    - name: Remove old installation of Go
+      become: yes
+      file:
+        path: /usr/local/go
+        state: absent
+
+    - name: Extract the Go tarball 
+      become: yes
+      unarchive:
+        src: "/usr/local/src/{{ var_go_tarball }}"
+        dest: /usr/local
+        copy: no
+
+    - name: Add the Go bin directory to the PATH environment variable for all users
+      become: yes
+      copy:
+        content: "PATH=$PATH:/usr/local/go/bin"
+        dest: /etc/profile.d/go-bin.sh
+
+    - name: Set GOPATH for all users
+      become: yes
+      copy:
+        content: "export GOPATH=$HOME/go; export PATH=$GOPATH/bin:$PATH"
+        dest: /etc/profile.d/go-path.sh
+
+    # ---------- Install Kind
+    - name: Download Kind
+      shell: 
+        cmd: GO111MODULE="on" /usr/local/go/bin/go get sigs.k8s.io/kind
+
+    # - name: Add the Kind bin directory to the PATH environment variable 
+    #   become: "{{ var_domainUser }}"
+    #   copy:
+    #     content: "PATH=$PATH:$HOME/go/bin"
+    #     dest: "/home/{{ var_domainUser }}/.ssh/environment"
+
+    # ---------- Create cluster
+    - name: Copy templates
+      template: 
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - { src: "./templates/config.yml", dest: "config.yml" }
+
+    - name: Create Cluster
+      shell: 
+        cmd: go/bin/kind create cluster --config=config.yml
+
+    - name: KOMPONENTS_RESULT
+      set_fact:
+        result:
+          privateKey: "{{ var_domainPrivateKey if var_domainPrivateKey is defined else lookup('file', '{{ hostvars.localhost.var_domainPrivateKeyPath }}', rstrip=False) }}"
+          publicKey: "{{ var_domainPublicKey if var_domainPublicKey is defined else lookup('file', '{{ hostvars.localhost.var_domainPrivateKeyPath }}.pub', rstrip=False) }}"
+          hostname: "{{ ansible_hostname }}"
+          mem: "{{ ansible_memtotal_mb }}"
+          cpu: "{{ ansible_processor_cores }}"
+          ifaces: "{{ ansible_facts | dict2items | selectattr('key','in', ansible_facts.interfaces) | list | items2dict }}"
+          iface: "{{ ansible_default_ipv4 }}"
+          os: 
+            name: "{{ ansible_distribution }}"
+            version: "{{ ansible_distribution_version }}"
+#          devs: "{{ ansible_facts.devices | dict2items | selectattr('key','in', ansible_facts.device_links.ids.keys()) | list | items2dict }}"
+          kernel: "{{ ansible_kernel }}"
+         
+    - debug: var=result
+
+# ------------------------------
+#  Clean-up host connection
+# ------------------------------
+- name: Clean-up host connection
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Delete domain private key
+      when: var_domainPrivateKey is defined
+      file: 
+        path: "{{ var_domainPrivateKeyPath }}"
+        state: absent
+
+    - name: Delete domain public key
+      when: var_domainPublicKey is defined
+      file: 
+        path: "{{ var_domainPrivateKeyPath }}.pub"
+        state: absent
+    
+    - name: Delete host private key
+      when: var_hostPrivateKey is defined
+      file: 
+        path: "{{ var_hostPrivateKeyPath }}"
+        state: absent

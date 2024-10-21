@@ -1,0 +1,21 @@
+{
+  "name": "componentcontroller",
+  "version": "1.0.0",
+  "description": "Component Controller in the Komponents platform",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Javier Esparza-Peidro <jesparza@dsic.upv.es>",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "lodash": "^4.17.21",
+    "q": "^1.5.1",
+    "store": "file:../store",
+    "utils": "file:../utils",
+    "yaml": "^1.10.2"
+  }
+}

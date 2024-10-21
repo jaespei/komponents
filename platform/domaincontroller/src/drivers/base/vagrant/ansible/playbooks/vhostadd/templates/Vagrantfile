@@ -1,0 +1,8 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "debian/buster64"
+  config.vm.network "public_network", bridge: "{{ var_vhostIface }}" {{ ',ip: "' ~ var_vhostAddr ~ '"' if var_vhostAddr is defined else '' }}
+  config.vm.provider "virtualbox" do |v|
+    v.memory = {{ var_vhostMem | default(4096) }}
+    v.cpus = {{ var_vhostCpu | default(1) }}
+  end
+end

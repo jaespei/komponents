@@ -1,0 +1,91 @@
+---
+# Variables:
+# - var_workingDir
+# - var_domainPrivateKey
+# - var_domainUser
+# - var_fabricAddr 
+#
+# Requirements: 
+#
+
+# ------------------------------
+#  Prepare fabric connection
+# ------------------------------
+- name: Prepare fabric connection
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Create working dir
+      file:
+        path: "{{ var_workingDir }}"
+        state: directory
+
+    - name: Set domain private key path
+      when: var_domainPrivateKey is defined
+      set_fact: 
+        var_domainPrivateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
+
+    - name: Write temporal domain private key locally
+      when: var_domainPrivateKey is defined
+      copy:
+        content: "{{ var_domainPrivateKey }}"
+        dest: "{{ var_domainPrivateKeyPath }}"
+        mode: "600"
+
+    - name: Add in-mem host
+      add_host:
+        name: fabric
+        ansible_host: "{{ var_fabricAddr }}"
+        ansible_user: "{{ var_domainUser }}"
+        ansible_ssh_private_key_file: "{{ var_domainPrivateKeyPath }}"
+      changed_when: false
+
+# ------------------------------
+#  Remove vhosts and fabric 
+# ------------------------------
+- name: Remove fabric
+  hosts: fabric
+  tasks:
+
+    - name: Obtain list of vhosts
+      command: "ls vhosts" 
+      register: var_vhosts
+
+    - name: Stop vhost/s
+      command: 
+        cmd: vagrant destroy --force
+        chdir: "vhosts/{{ item }}"    
+      loop: "{{ var_vhosts.stdout_lines }}"
+
+    - name: Remove vhost/s files
+      file:
+        path: "vhosts/{{ item }}"
+        state: "absent"
+      loop: "{{ var_vhosts.stdout_lines }}"
+
+    - name: Remove vhost folder
+      file:
+        path: "vhosts"
+        state: "absent"
+
+    # - name: Remove domain user
+    #   become: yes
+    #   ignore_errors: yes   # because the current user is deleted !
+    #   user:
+    #     name: "{{ var_domainUser }}"
+    #     state: absent
+    #     remove: yes
+    #     force: yes
+
+# ------------------------------
+#  Clean-up fabric connection
+# ------------------------------
+- name: Clean-up fabric connection
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Delete domain private key
+      when: var_domainPrivateKey is defined
+      file: 
+        path: "{{ var_domainPrivateKeyPath }}"
+        state: absent

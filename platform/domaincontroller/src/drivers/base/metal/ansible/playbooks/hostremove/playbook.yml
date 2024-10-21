@@ -1,0 +1,73 @@
+---
+# Variables:
+# - var_workingDir
+# - var_domainPrivateKey
+# - var_domainUser
+# - var_hosts
+# - var_addhoc (optional)
+#
+# Requirements: 
+#
+
+# ------------------------------
+#  Prepare host/s connection
+# ------------------------------
+- name: Prepare host/s connection
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Create working dir
+      file:
+        path: "{{ var_workingDir }}"
+        state: directory
+
+    - name: Set domain private key path
+      when: var_domainPrivateKey is defined
+      set_fact: 
+        var_domainPrivateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
+
+    - name: Write temporal domain private key locally
+      when: var_domainPrivateKey is defined
+      copy:
+        content: "{{ var_domainPrivateKey }}"
+        dest: "{{ var_domainPrivateKeyPath }}"
+        mode: "600"
+
+    - name: Add in-mem host
+#      when: var_addhoc is defined
+      add_host:
+        name: "{{ item }}"
+        ansible_user: "{{ var_domainUser }}"
+        ansible_ssh_private_key_file: "{{ var_domainPrivateKeyPath }}"
+      changed_when: false
+      loop: "{{ var_hosts.split(',') }}"
+
+
+# ------------------------------
+#  Remove host/s
+# ------------------------------
+- name: Remove host/s
+  hosts: "{{ var_hosts }}"
+  tasks:
+
+    - name: Remove domain user
+      become: yes
+      ignore_errors: yes   # because the current user is deleted !
+      user:
+        name: "{{ var_domainUser }}"
+        state: absent
+        remove: yes
+        force: yes
+
+# ------------------------------
+#  Clean-up host connection
+# ------------------------------
+- name: Clean-up host connection
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Delete domain private key
+      when: var_domainPrivateKey is defined
+      file: 
+        path: "{{ var_domainPrivateKeyPath }}"
+        state: absent

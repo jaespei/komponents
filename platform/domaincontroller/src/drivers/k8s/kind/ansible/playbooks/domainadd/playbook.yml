@@ -1,0 +1,338 @@
+---
+# Variables:
+# - var_workingDir
+# - var_domainPrivateKey
+# - var_domainUser
+# - var_hostAddr
+# - var_masteNodes
+# - var_workerNodes
+# - var_domainId (for template)
+# - var_gwPrivatePort (for template)
+# - var_gwPort (for template)
+# - var_apiPort (for template)
+# - var_podSubnet (for template)
+# - var_serviceSubnet (for template)
+# - var_ingressPort (template)
+# - var_ingressSecurePort (template)
+# - var_imagesPath
+#
+# Requirements: 
+# - OpenSSH installed in localhost
+#
+
+# ------------------------------
+#  Prepare local machine
+# ------------------------------
+- name: Add new domain
+  hosts: localhost
+  connection: local
+  tasks:
+
+    - name: Create working dir
+      file:
+        path: "{{ var_workingDir }}"
+        state: directory
+
+    - name: Set domain private key path
+      set_fact: 
+        var_domainPrivateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
+
+    - name: Write temporal domain private key locally
+      when: var_domainPrivateKey is defined
+      copy:
+        content: "{{ var_domainPrivateKey }}"
+        dest: "{{ var_domainPrivateKeyPath }}"
+        mode: "600"
+
+    - name: Add in-mem host
+      add_host:
+        name: host
+        ansible_host: "{{ var_hostAddr }}"
+        ansible_user: "{{ var_domainUser }}"
+        ansible_ssh_private_key_file: "{{ var_domainPrivateKeyPath }}"
+      changed_when: false     
+
+# ------------------------------
+#  Configure host
+# ------------------------------
+- name: Configure host
+  hosts: host
+  vars: 
+    var_go_tarball: go1.16.3.linux-amd64.tar.gz 
+  tasks:
+
+    - name: Install required tools
+      become: yes
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        name: "{{ item }}"
+      with_items:
+        - git
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+#        - kubectl
+
+     # ---------- Install docker
+    - name: Add Docker’s official GPG key
+      become: yes
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+
+    - name: Add Docker Repository
+      become: yes
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Update apt and install docker-ce
+      become: yes
+      apt: 
+        update_cache: yes
+        name: "{{ item }}"
+      with_items:
+        - docker-ce
+        - docker-ce-cli 
+        - containerd.io
+
+    - name: Create Docker's group
+      become: yes
+      group:
+        name: docker
+        state: present
+
+    - name: Add user to Docker's group
+      become: yes
+      user:
+        name: "{{ var_domainUser }}"
+        append: yes
+        groups: docker
+        state: present        
+
+    # ---------- Install kubectl
+    - name: Add an apt signing key for Kubernetes
+      become: yes
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Adding apt repository for Kubernetes
+      become: yes
+      apt_repository:
+        repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+#        filename: kubernetes.list
+
+    - name: Install Kubernetes binaries
+      become: yes
+      apt: 
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+          #- kubelet 
+          #- kubeadm 
+          - kubectl
+
+    # - name: Restart kubelet
+    #   service:
+    #     name: kubelet
+    #     daemon_reload: yes
+    #     state: restarted
+
+    
+    # ---------- Install Go
+    - name: Check whether Go is installed
+      stat: 
+        path: /usr/local/go
+      register: go
+
+    - name: Download the Go tarball
+      when: not go.stat.exists
+      become: yes
+      get_url:
+        url: "https://dl.google.com/go/{{ var_go_tarball }}"
+        dest: "/usr/local/src/{{ var_go_tarball }}"
+
+    # - name: Remove old installation of Go
+    #   become: yes
+    #   file:
+    #     path: /usr/local/go
+    #     state: absent
+
+    - name: Extract the Go tarball 
+      when: not go.stat.exists
+      become: yes
+      unarchive:
+        src: "/usr/local/src/{{ var_go_tarball }}"
+        dest: /usr/local
+        copy: no
+
+    - name: Add the Go bin directory to the PATH environment variable for all users
+      when: not go.stat.exists
+      become: yes
+      copy:
+        content: "PATH=$PATH:/usr/local/go/bin"
+        dest: /etc/profile.d/go-bin.sh
+
+    - name: Set GOPATH for all users
+      when: not go.stat.exists
+      become: yes
+      copy:
+        content: "export GOPATH=$HOME/go; export PATH=$GOPATH/bin:$PATH"
+        dest: /etc/profile.d/go-path.sh
+
+    # ---------- Install Kind
+    - name: Check whether Kind is installed
+      stat: 
+        path: go/bin/kind
+      register: kind
+
+    - name: Download Kind
+      when: not kind.stat.exists
+      shell: 
+        cmd: GO111MODULE="on" /usr/local/go/bin/go get sigs.k8s.io/kind
+
+    # - name: Add the Kind bin directory to the PATH environment variable 
+    #   become: "{{ var_domainUser }}"
+    #   copy:
+    #     content: "PATH=$PATH:$HOME/go/bin"
+    #     dest: "/home/{{ var_domainUser }}/.ssh/environment"
+
+
+    # ---------- Reset connection to allow user changes take effect (groups, ...)
+    - name: Reset connection
+      meta: reset_connection
+
+
+    # ---------- Hack: add insecure registry ??
+    #   (only if no clusters already exist)
+    - name: List kind clusters
+      shell:
+        cmd: "go/bin/kind get clusters -q"
+      register: clusters
+
+    - name: Add insecure registries to docker (only if no clusters exist)
+      when: not clusters.stdout
+      become: yes
+      copy:
+        src: "./templates/daemon.json"
+        dest: "/etc/docker/daemon.json"
+        force: true
+
+    - name: Restart docker daemon (only if no clusters exist)
+      when: not clusters.stdout
+      become: yes
+      systemd:
+        name: docker
+        daemon_reload: yes
+        state: restarted
+
+
+    # ---------- Create cluster
+    - name: Copy templates
+      template: 
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - { src: "./templates/config.yml", dest: "config-{{ var_domainId }}.yml" }
+        - { src: "./templates/deploy.yml", dest: "deploy-{{ var_domainId }}.yml" }
+
+    - name: Create Cluster
+      shell: 
+        cmd: "go/bin/kind create cluster --config=config-{{ var_domainId }}.yml"
+
+    # ---------- Obtain cluster config
+    - name: Obtain cluster config
+      shell:
+        cmd: "go/bin/kind get kubeconfig --name {{ var_domainId }}"
+      register: kindOutput
+
+    - name: Copy cluster config to file
+      copy:
+       content: "{{ kindOutput.stdout }}" 
+       dest: "config-{{ var_domainId }}"
+
+    # ---------- Create Ingress
+    - name: Create NGINX Ingress
+      shell:
+        cmd: "kubectl --kubeconfig=config-{{ var_domainId }} apply -f deploy-{{ var_domainId }}.yml"
+     
+    # - name: Wait for Ingress
+    #   shell:
+    #     cmd: "kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s"    
+
+    # ---------- Load system images (sidecar, proxy, gateway)
+    - name: Check whether images exist
+      stat:
+        path: "images"
+      register: images
+
+    - name: Copy system image sources
+      when: not images.stat.exists
+      copy:
+        src: "{{ var_imagesPath }}/{{ item }}"
+        dest: "images/"
+        force: false
+      with_items:
+        - gateway
+        - proxy
+        - sidecar
+
+    # - name: Build system images
+    #   community.docker.docker_image:
+    #     build:
+    #       path: "images/{{ item }}"
+    #     name: "{{ item }}"
+    #     tag: 1.0
+    #     source: build
+    #   with_items:
+    #     - gateway
+    #     - proxy
+    #     - sidecar
+
+    - name: Build system images
+      when: not images.stat.exists
+      shell:
+        cmd: "docker build -t {{ item }}:1.0 images/{{ item }}"
+      with_items:
+        - gateway
+        - proxy
+        - sidecar
+
+    - name: Load system images
+      shell: 
+        cmd: "go/bin/kind load docker-image {{ item }}:1.0 --name {{ var_domainId | default('ks') }}"
+      with_items:
+        - gateway
+        - proxy
+        - sidecar
+
+    - name: KOMPONENTS_RESULT
+      set_fact: 
+        result:
+          config: "{{ kindOutput.stdout }}"
+#          config: "{{ kindOutput.stdout | from_yaml }}"
+
+    # - name: KOMPONENTS_RESULT
+    #   set_fact: 
+    #     result:
+    #       config: "{{ lookup('file', '/home/{{ var_domainUser }}/.kube/config', rstrip=False) | from_yaml }}"
+
+# ------------------------------
+#  Clean-up host connection
+# ------------------------------
+- name: Clean-up host connection
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Delete domain private key
+      when: var_domainPrivateKey is defined
+      file: 
+        path: "{{ var_domainPrivateKeyPath }}"
+        state: absent

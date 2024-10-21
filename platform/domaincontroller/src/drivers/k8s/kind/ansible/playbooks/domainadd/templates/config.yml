@@ -1,0 +1,30 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: {{ var_domainId | default('komponents') }}
+networking:
+  apiServerAddress: "{{ var_hostAddr }}"
+  apiServerPort: {{ var_apiPort | default('6443') }}
+  podSubnet: {{ var_podSubnet | default("10.244.0.0/16") }}
+  serviceSubnet: {{var_serviceSubnet | default("10.96.0.0/12") }}
+nodes:
+- role: control-plane
+  # create ingress
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  # inject external (gw-related) traffic to the cluster
+  - containerPort: {{ var_gwPort | default('30100') }}
+    hostPort: {{ var_gwPort | default('30100') }}
+    listenAddress: "0.0.0.0"
+    protocol: tcp
+  # inject ingress traffic
+  - containerPort: {{ var_ingressPort | default('80') }}
+    hostPort: {{ var_ingressPort | default('80') }}
+    protocol: TCP
+  - containerPort: {{ var_ingressSecurePort | default('443') }}
+    hostPort: {{ var_ingressSecurePort | default('443') }}
+    protocol: TCP

@@ -1,0 +1,29 @@
+{
+    "name": "store",
+    "version": "1.0.0",
+    "description": "store",
+    "main": "src/index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Javier Esparza Peidro <jesparza@dsic.upv.es>",
+    "license": "ISC",
+    "dependencies": {
+        "axios": "^0.21.1",
+        "body-parser": "^1.19.0",
+        "debug": "^4.3.4",
+        "express": "^4.17.1",
+        "ip": "^2.0.1",
+        "json-stable-stringify": "^1.0.1",
+        "lev2": "^7.2.5",
+        "leveldown": "^5.6.0",
+        "levelup": "^4.4.0",
+        "lodash": "^4.12.0",
+        "mongodb": "^3.6.5",
+        "q": "^1.4.1",
+        "sqlite3": "^5.0.2",
+        "url": "^0.11.0",
+        "utils": "file:../utils",
+        "yargs": "^16.2.0"
+    }
+}

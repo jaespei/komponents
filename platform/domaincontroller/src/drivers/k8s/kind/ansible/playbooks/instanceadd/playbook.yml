@@ -1,0 +1,114 @@
+---
+# Variables:
+# - var_workingDir
+# - var_domainPrivateKey
+# - var_domainUser
+# - var_hostAddr
+# - var_domainId
+# - var_imageMode
+# - var_imageId
+# - var_imageSource
+#
+# Requirements: 
+# - OpenSSH installed in localhost
+#
+
+# ------------------------------
+#  Prepare host connection
+# ------------------------------
+- name: Prepare host connection
+  hosts: localhost
+  connection: local
+  tasks:
+
+    - name: Create working dir
+      file:
+        path: "{{ var_workingDir }}"
+        state: directory
+
+    - name: Set domain private key path
+      set_fact: 
+        var_domainPrivateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
+
+    - name: Write temporal domain private key locally
+      when: var_domainPrivateKey is defined
+      copy:
+        content: "{{ var_domainPrivateKey }}"
+        dest: "{{ var_domainPrivateKeyPath }}"
+        mode: "600"
+
+    - name: Add in-mem host
+      add_host:
+        name: host
+        ansible_host: "{{ var_hostAddr }}"
+        ansible_user: "{{ var_domainUser }}"
+        ansible_ssh_private_key_file: "{{ var_domainPrivateKeyPath }}"
+      changed_when: false    
+    
+
+# ------------------------------
+#  Add image
+# ------------------------------
+- name: Add image
+  hosts: host
+  tasks:
+
+    # ---------- Check whether images exist
+    - name: List docker images
+      shell:
+        cmd: "docker images -q {{ var_imageId }}"
+      register: images
+
+    # ---------- Build image (if "build" mode and image does not exist)
+    - name: Build image
+      when: not images.stdout and var_imageMode == "build"
+      shell: 
+        cmd: "docker build -t {{ var_imageId }}:1.0 {{ var_imageSource }}"
+
+    # ---------- Pull image (if "pull" mode and image does not exist)
+    - name: Pull image
+      when: not images.stdout and var_imageMode == "pull"
+      shell: 
+        cmd: "docker pull {{ var_imageSource }}"
+
+    # ---------- Tag image (if "pull" mode image does not exist)
+    - name: Tag image
+      when: not images.stdout and var_imageMode == "pull"
+      shell: 
+        cmd: "docker tag {{ var_imageSource }} {{ var_imageId }}:1.0"
+
+    # ---------- List images in kind cluster
+    - name: List images in kind
+      shell: 
+        cmd: "docker exec {{ var_domainId }}-control-plane crictl images"
+      register: kindimages
+
+    # ---------- Load image (if image does not exist)
+    - name: Load image
+      when: not kindimages is search("docker.io/library/{{ var_imageId }}")
+      shell: 
+        cmd: "go/bin/kind load docker-image {{ var_imageId }}:1.0 --name {{ var_domainId | default('ks') }}"
+      
+    # - name: KOMPONENTS_RESULT
+    #   set_fact: 
+    #     result:
+    #       config: "{{ kindOutput.stdout }}"
+#          config: "{{ kindOutput.stdout | from_yaml }}"
+
+    # - name: KOMPONENTS_RESULT
+    #   set_fact: 
+    #     result:
+    #       config: "{{ lookup('file', '/home/{{ var_domainUser }}/.kube/config', rstrip=False) | from_yaml }}"
+
+# ------------------------------
+#  Clean-up host connection
+# ------------------------------
+- name: Clean-up host connection
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Delete domain private key
+      when: var_domainPrivateKey is defined
+      file: 
+        path: "{{ var_domainPrivateKeyPath }}"
+        state: absent

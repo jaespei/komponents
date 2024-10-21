@@ -1,0 +1,189 @@
+---
+# Variables:
+# - var_workingDir
+# - var_domainPrivateKey
+# - var_domainPublicKey
+# - var_domainUser
+# - var_fabricHost
+# - var_vhostId
+# - var_vhostAddr
+# - var_vhostPort
+# - var_vhostMem
+# - var_vhostCpu
+# - var_vhostIface
+#
+# Requirements: 
+# - Ansible collection ansibe.posix
+#
+
+# ------------------------------
+#  Prepare fabric connection
+# ------------------------------
+- name: Prepare fabric connection
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Create working dir
+      file:
+        path: "{{ var_workingDir }}"
+        state: directory
+
+    - name: Set domain private key path
+      when: var_domainPrivateKey is defined
+      set_fact: 
+        var_domainPrivateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
+
+    - name: Write temporal domain private key locally
+      when: var_domainPrivateKey is defined
+      copy:
+        content: "{{ var_domainPrivateKey }}"
+        dest: "{{ var_domainPrivateKeyPath }}"
+        mode: "600"
+
+    - name: Write temporal domain public key locally
+      when: var_domainPublicKey is defined
+      copy:
+        content: "{{ var_domainPublicKey }}"
+        dest: "{{ var_domainPrivateKeyPath }}.pub"
+
+    - name: Add in-mem host
+      add_host:
+        name: fabric
+        ansible_host: "{{ var_fabricHost }}"
+        ansible_user: "{{ var_domainUser }}"
+        ansible_ssh_private_key_file: "{{ var_domainPrivateKeyPath }}"
+      changed_when: false
+
+# ------------------------------
+#  Add new vhost
+# ------------------------------
+- name: Add new vhost
+  hosts: fabric
+  tasks:
+
+    - name: Add vhost folder
+      file: 
+        path: "vhosts/{{ var_vhostId }}"
+        state: "directory"
+
+    - name: Copy templates
+      template: 
+        src: "{{ item.src }}"
+        dest: "vhosts/{{ var_vhostId }}/{{ item.dest }}"
+      with_items:
+        - { src: "./templates/Vagrantfile", dest: "Vagrantfile" }
+
+    - name: Copy files
+      copy: 
+        src: "{{ item.src }}"
+        dest: "vhosts/{{ var_vhostId }}/{{ item.dest }}"
+      with_items:
+        - { src: "{{ hostvars.localhost.var_domainPrivateKeyPath }}.pub", dest: "key.pub" }
+
+    - name: Start vhost
+      command: 
+        cmd: vagrant up
+        chdir: "vhosts/{{ var_vhostId }}"      
+
+    - name: List vhost addresses
+      command: 
+        cmd: vagrant ssh -c 'ip addr show eth1'
+        chdir: "vhosts/{{ var_vhostId }}"    
+      register: vagrantOutput
+
+    - name: Obtain vhost address
+      set_fact:
+        var_vhostAddr: "{{ vagrantOutput.stdout | regex_search('\\s+inet\\s(?P<inet>([0-9]{1,3}\\.){3}[0-9]{1,3})','\\1') | first }}"
+      
+    - name: Add domain key
+      command: 
+        cmd: vagrant ssh -c 'cat /vagrant/key.pub >> ~/.ssh/authorized_keys'
+        chdir: "vhosts/{{ var_vhostId }}" 
+
+    - name: Add in-mem host
+      add_host:
+        name: vhost
+        ansible_host: "{{ var_vhostAddr }}"
+        ansible_user: "vagrant"
+        ansible_ssh_private_key_file: "{{ hostvars.localhost.var_domainPrivateKeyPath }}"
+      changed_when: false
+
+# ------------------------------
+#  Configure vhost
+# ------------------------------
+- name: Configure vhost
+  hosts: vhost
+  tasks:
+
+    - name: Install required software
+      become: yes
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        name: "{{ item }}"
+      with_items:
+        - sudo
+
+    - name: Add sudoers group
+      become: yes
+      group: 
+        name: sudo
+        state: present
+
+    - name: Add domain user
+      become: yes
+      user:
+        name: "{{ var_domainUser }}"
+        state: present
+        createhome: yes
+
+    - name: Add domain user to sudoers
+      become: yes
+      lineinfile: 
+        dest: "/etc/sudoers"
+        state: "present"
+        regexp: "^%{{ var_domainUser }}"
+        line: "%{{ var_domainUser }} ALL=(ALL) NOPASSWD: ALL"
+
+    - name: Add domain key
+      become: yes
+      ansible.posix.authorized_key:
+        user: "{{ var_domainUser }}"
+        state: present
+        key: "{{ lookup('file', '{{ hostvars.localhost.var_domainPrivateKeyPath }}.pub', rstrip=False) }}"
+
+    - name: KOMPONENTS_RESULT
+      set_fact:
+        result:
+          hostname: "{{ ansible_hostname }}"
+          addr: "{{ hostvars.fabric.var_vhostAddr }}"
+          mem: "{{ ansible_memtotal_mb }}"
+          cpu: "{{ ansible_processor_cores }}"
+          ifaces: "{{ ansible_facts | dict2items | selectattr('key','in', ansible_facts.interfaces) | list | items2dict }}"
+          iface: "{{ ansible_default_ipv4 }}"
+          os: 
+            name: "{{ ansible_distribution }}"
+            version: "{{ ansible_distribution_version }}"
+#          devs: "{{ ansible_facts.devices | dict2items | selectattr('key','in', ansible_facts.device_links.ids.keys()) | list | items2dict }}"
+          kernel: "{{ ansible_kernel }}"
+         
+    - debug: var=result
+
+# ------------------------------
+#  Clean-up fabric connection
+# ------------------------------
+- name: Clean-up fabric connection
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Delete domain private key
+      when: var_domainPrivateKey is defined
+      file: 
+        path: "{{ var_domainPrivateKeyPath }}"
+        state: absent
+
+    - name: Delete domain public key
+      when: var_domainPublicKey is defined
+      file: 
+        path: "{{ var_domainPrivateKeyPath }}.pub"
+        state: absent

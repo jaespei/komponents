@@ -1,0 +1,68 @@
+---
+# Variables:
+# - var_workingDir
+# - var_domainPrivateKey
+# - var_domainUser
+# - var_hostAddr
+# - var_domainId
+#
+# Requirements: 
+# - OpenSSH installed in localhost
+#
+
+# ------------------------------
+#  Prepare local machine
+# ------------------------------
+- name: Add new domain
+  hosts: localhost
+  connection: local
+  tasks:
+
+    - name: Create working dir
+      file:
+        path: "{{ var_workingDir }}"
+        state: directory
+
+    - name: Set domain private key path
+      set_fact: 
+        var_domainPrivateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
+
+    - name: Write temporal domain private key locally
+      when: var_domainPrivateKey is defined
+      copy:
+        content: "{{ var_domainPrivateKey }}"
+        dest: "{{ var_domainPrivateKeyPath }}"
+        mode: "600"
+
+    - name: Add in-mem host
+      add_host:
+        name: host
+        ansible_host: "{{ var_hostAddr }}"
+        ansible_user: "{{ var_domainUser }}"
+        ansible_ssh_private_key_file: "{{ var_domainPrivateKeyPath }}"
+      changed_when: false     
+
+# ------------------------------
+#  Configure host
+# ------------------------------
+- name: Configure host
+  hosts: host
+  tasks:
+    
+    # ---------- Create cluster
+    - name: Delete cluster
+      shell: 
+        cmd: "go/bin/kind delete cluster --name {{ var_domainId }}" 
+
+# ------------------------------
+#  Clean-up host connection
+# ------------------------------
+- name: Clean-up host connection
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Delete domain private key
+      when: var_domainPrivateKey is defined
+      file: 
+        path: "{{ var_domainPrivateKeyPath }}"
+        state: absent

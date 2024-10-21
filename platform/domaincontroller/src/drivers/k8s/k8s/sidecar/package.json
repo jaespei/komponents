@@ -1,0 +1,11 @@
+{
+  "name": "sidecar",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/sidecar.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Javier Esparza-Peidro <jesparza@dsic.upv.es>",
+  "license": "ISC"
+}

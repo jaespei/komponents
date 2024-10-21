@@ -1,0 +1,57 @@
+@font-face {
+  font-family: 'komponents';
+  src:  url('fonts/komponents.eot?1z650y');
+  src:  url('fonts/komponents.eot?1z650y#iefix') format('embedded-opentype'),
+    url('fonts/komponents.ttf?1z650y') format('truetype'),
+    url('fonts/komponents.woff?1z650y') format('woff'),
+    url('fonts/komponents.svg?1z650y#komponents') format('svg');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+[class^="ks-"], [class*=" ks-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'komponents' !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ks-component-unknown:before {
+  content: "\e900";
+}
+.ks-connector-unknown:before {
+  content: "\e901";
+}
+.ks-component-export:before {
+  content: "\e902";
+}
+.ks-component-import:before {
+  content: "\e903";
+}
+.ks-composite:before {
+  content: "\e904";
+}
+.ks-connector-export:before {
+  content: "\e905";
+}
+.ks-connector-import:before {
+  content: "\e906";
+}
+.ks-connector-lb:before {
+  content: "\e907";
+}
+.ks-connector-ms:before {
+  content: "\e908";
+}
+.ks-connector-ps:before {
+  content: "\e909";
+}
