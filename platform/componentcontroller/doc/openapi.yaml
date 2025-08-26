@@ -1,0 +1,373 @@
+openapi: 3.0.0
+info:
+  title: Komponents Component Controller API
+  description: API documentation for the Komponents Component Controller component
+  version: 1.0.0
+paths:
+  /collections:
+    get:
+      summary: Retrieve a list of all instance collections
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the collections list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of collections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+  /collections/{colId}:
+    get:
+      summary: Retrieve details of a specific collection
+      parameters:
+        - in: path
+          name: colId
+          required: true
+          schema:
+            type: string
+          description: The ID of the collection to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Collection details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving collection
+  /collections/{colId}/instances:
+    get:
+      summary: Retrieve list of instances running within a specific collection
+      parameters:
+        - in: path
+          name: colId
+          required: true
+          schema:
+            type: string
+          description: The ID of the collection
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of instances retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error retrieving instances
+  /links:
+    get:
+      summary: Retrieve a list of all collection links
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the links list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of collection links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+  /links/{linkId}:
+    get:
+      summary: Retrieve details of a specific collection link
+      parameters:
+        - in: path
+          name: linkId
+          required: true
+          schema:
+            type: string
+          description: The ID of the collection link to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Collection link details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving collection link
+  /instances:
+    get:
+      summary: Retrieve a list of all instances
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the instances list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of instances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+    post:
+      summary: Create a new instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Instance created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating instance
+  /instances/{instId}:
+    get:
+      summary: Retrieve details of a specific instance
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the instance to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Instance details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving instance
+    put:
+      summary: Update an existing instance
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the instance to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Instance updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error executing update
+    delete:
+      summary: Delete a specific instance
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the instance to delete
+      responses:
+        '200':
+          description: Instance deleted successfully
+        '400':
+          description: Error executing delete
+  /instances/{instId}/graph:
+    get:
+      summary: Retrieve the deployment graph triggered by a specific instance
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the instance
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Graph details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving graph
+  /graphs:
+    get:
+      summary: Retrieve a list of all deployment graphs
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the graphs list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of graphs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+  /graphs/{instId}:
+    get:
+      summary: Retrieve deployment graph of a specific instance
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the instance
+      responses:
+        '200':
+          description: Graph details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving graph
+  /transactions:
+    get:
+      summary: Retrieve a list of all transactions
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the transactions list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+  /transactions/{txId}:
+    get:
+      summary: Retrieve details of a specific transaction
+      parameters:
+        - in: path
+          name: txId
+          required: true
+          schema:
+            type: string
+          description: The ID of the transaction to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Transaction details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving transaction

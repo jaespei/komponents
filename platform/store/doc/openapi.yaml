@@ -1,0 +1,185 @@
+openapi: 3.0.0
+info:
+  title: Komponents Store API
+  description: API documentation for the Komponents Store component
+  version: 1.0.0
+paths:
+  /{driver}/{db}:
+    post:
+      summary: Open or create documents database
+      parameters:
+        - in: path
+          name: driver
+          required: true
+          schema:
+            type: string
+          description: The driver name
+        - in: path
+          name: db
+          required: true
+          schema:
+            type: string
+          description: The database name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '204':
+          description: Database opened successfully
+        '400':
+          description: Error opening database
+  /{driver}/{db}/{collection}:
+    get:
+      summary: Search documents in the specified collection
+      parameters:
+        - in: path
+          name: driver
+          required: true
+          schema:
+            type: string
+          description: The driver name
+        - in: path
+          name: db
+          required: true
+          schema:
+            type: string
+          description: The database name
+        - in: path
+          name: collection
+          required: true
+          schema:
+            type: string
+          description: The collection name
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter and options to apply to the query
+      responses:
+        '200':
+          description: List of documents retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+    post:
+      summary: Insert a new document into the specified collection
+      parameters:
+        - in: path
+          name: driver
+          required: true
+          schema:
+            type: string
+          description: The driver name
+        - in: path
+          name: db
+          required: true
+          schema:
+            type: string
+          description: The database name
+        - in: path
+          name: collection
+          required: true
+          schema:
+            type: string
+          description: The collection name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '204': 
+          description: Document inserted successfully
+        '400':
+          description: Error inserting document
+    put:
+      summary: Update documents in the specified collection 
+      parameters:
+        - in: path
+          name: driver
+          required: true
+          schema:
+            type: string
+          description: The driver name
+        - in: path
+          name: db
+          required: true
+          schema:
+            type: string
+          description: The database name
+        - in: path
+          name: collection
+          required: true
+          schema:
+            type: string
+          description: The collection name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: Filter to select documents to update
+                data:
+                  type: object
+                  description: Data to update in the selected documents
+                opts:
+                  type: object
+                  description: Optional additional options for the update
+      responses:
+        '200':
+          description: Documents updated successfully
+        '400':
+          description: Error executing update
+    delete:
+      summary: Delete documents from the specified collection
+      parameters:
+        - in: path
+          name: driver
+          required: true
+          schema:
+            type: string
+          description: The driver name
+        - in: path
+          name: db
+          required: true
+          schema:
+            type: string
+          description: The database name
+        - in: path
+          name: collection
+          required: true
+          schema:
+            type: string
+          description: The collection name
+      x-requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: Filter to select documents to delete
+                opts:
+                  type: object
+                  description: Optional additional options for the delete
+      responses:
+        '200':
+          description: Documents deleted successfully
+        '400':
+          description: Error executing delete

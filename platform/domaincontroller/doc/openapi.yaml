@@ -1,0 +1,639 @@
+openapi: 3.0.0
+info:
+  title: Komponents Domain Controller API
+  description: API documentation for the Komponents Domain Controller component
+  version: 1.0.0
+paths:
+  /domains:
+    get:
+      summary: Retrieve a list of all domains
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the domain list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of domains
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+    post:
+      summary: Create a new domain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Domain created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating domain
+  /domains/{domId}:
+    get:
+      summary: Retrieve details of a specific domain
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain to retrieve
+      responses:
+        '200':
+          description: Domain details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving domain
+    put:
+      summary: Update an existing domain's information
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Domain updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error executing update
+    delete:
+      summary: Delete a specific domain
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain to delete
+      responses:
+        '200':
+          description: Domain deleted successfully
+        '400':
+          description: Error executing delete
+  /domains/{domId}/resources:
+    get:
+      summary: Retrieve resources associated with a specific domain
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the resource list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of resources
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving resources
+    post:
+      summary: Create a new resource within a specific domain
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating resource
+  /domains/{domId}/collections:
+    get:
+      summary: Retrieve collections running within a specific domain
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the collections list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of collections
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving collections
+    post:
+      summary: Create a new collection within a specific domain
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Collection created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating collection
+  /domains/{domId}/instances:
+    get:
+      summary: Retrieve instances running within a specific domain
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the instances list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of instances
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving instances
+  /resources:
+    get:
+      summary: Retrieve a list of all resources
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the resource list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of resources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+
+  /resources/{resId}:
+    get:
+      summary: Retrieve details of a specific resource
+      parameters:
+        - in: path
+          name: resId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Resource details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving resource
+    delete:
+      summary: Delete a specific resource
+      parameters:
+        - in: path
+          name: resId
+          required: true
+          schema:
+            type: string
+          description: The ID of the resource to delete
+      responses:
+        '200':
+          description: Resource deleted successfully
+        '400':
+          description: Error executing delete
+  /collections:
+    get:
+      summary: Retrieve a list of all instance collections
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the collections list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of collections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+  /collections/{colId}:
+    get:
+      summary: Retrieve details of a specific collection
+      parameters:
+        - in: path
+          name: colId
+          required: true
+          schema:
+            type: string
+          description: The ID of the collection to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Collection details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving collection
+    delete:
+      summary: Delete a specific collection
+      parameters:
+        - in: path
+          name: colId
+          required: true
+          schema:
+            type: string
+          description: The ID of the collection to delete
+      responses:
+        '200':
+          description: Collection deleted successfully
+        '400':
+          description: Error executing delete
+  /collections/{colId}/instances:
+    get:
+      summary: Retrieve list of instances running within a specific collection
+      parameters:
+        - in: path
+          name: colId
+          required: true
+          schema:
+            type: string
+          description: The ID of the collection
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of instances retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error retrieving instances
+    post:
+      summary: Create a new instance within a specific collection
+      parameters:
+        - in: path
+          name: colId
+          required: true
+          schema:
+            type: string
+          description: The ID of the collection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Instance created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating instance
+  /links:
+    get:
+      summary: Retrieve a list of all collection links
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the links list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of collection links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+    post:
+      summary: Create a new colletion link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Collection link created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating collection link
+  /links/{linkId}:
+    get:
+      summary: Retrieve details of a specific collection link
+      parameters:
+        - in: path
+          name: linkId
+          required: true
+          schema:
+            type: string
+          description: The ID of the collection link to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Collection link details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving collection link
+    delete:
+      summary: Delete a specific collection link
+      parameters:
+        - in: path
+          name: linkId
+          required: true
+          schema:
+            type: string
+          description: The ID of the collection link to delete
+      responses:
+        '200':
+          description: Collection link deleted successfully
+        '400':
+          description: Error executing delete
+  /instances:
+    get:
+      summary: Retrieve a list of all instances
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the instances list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of instances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+  /instances/{instId}:
+    get:
+      summary: Retrieve details of a specific instance
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the instance to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Instance details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving instance
+    delete:
+      summary: Delete a specific instance
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the instance to delete
+      responses:
+        '200':
+          description: Instance deleted successfully
+        '400':
+          description: Error executing delete
+  /transactions:
+    get:
+      summary: Retrieve a list of all transactions
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the transactions list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+  /transactions/{txId}:
+    get:
+      summary: Retrieve details of a specific transaction
+      parameters:
+        - in: path
+          name: txId
+          required: true
+          schema:
+            type: string
+          description: The ID of the transaction to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Transaction details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving transaction

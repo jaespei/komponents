@@ -1,0 +1,1182 @@
+openapi: 3.0.0
+info:
+  title: Komponents Realm Controller API
+  description: API documentation for the Komponents Realm Controller component
+  version: 1.0.0
+components:
+  securitySchemes:
+    bearerAuth:              
+      type: http
+      scheme: bearer
+      bearerFormat: JWT     
+    # ApiKeyAuth:
+    #   type: apiKey
+    #   in: header
+    #   name: Authorization
+paths:
+  /sessions:
+    post:
+      summary: Create a new session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
+        '400':
+          description: Error creating session
+    put:
+      summary: Refresh an existing session's token
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Session refreshed successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: Error executing update
+    delete:
+      summary: Destroy a session
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Session destroyed successfully
+        '400':
+          description: Error executing delete
+  /users:
+    get:
+      summary: Retrieve a list of all users
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the users list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+    post:
+      summary: Create a new user
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating user
+  /users/{userId}:
+    get:
+      summary: Retrieve details of a specific user
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+          description: The ID of the user to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the users list
+      responses:
+        '200':
+          description: User details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving user
+    put:
+      summary: Update an existing user's information
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+          description: The ID of the user to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error executing update
+    delete:
+      summary: Delete a specific user
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+          description: The ID of the user to delete
+      responses:
+        '200':
+          description: User deleted successfully
+        '400':
+          description: Error executing delete
+  /groups:
+    get:
+      summary: Retrieve a list of all groups
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the groups list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of groups retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+    post:
+      summary: Create a new group
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Group created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating group
+  /groups/{groupId}:
+    get:
+      summary: Retrieve details of a specific group
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+          description: The ID of the group to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the groups list
+      responses:
+        '200':
+          description: Group details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving group
+    put:
+      summary: Update an existing group's information
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+          description: The ID of the group to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Group updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error executing update
+    delete:
+      summary: Delete a specific group
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+          description: The ID of the group to delete
+      responses:
+        '200':
+          description: Group deleted successfully
+        '400':
+          description: Error executing delete
+  /groups/{groupId}/members:
+    get:
+      summary: Retrieve members of a specific group
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+          description: The ID of the group
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the members list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of members retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error retrieving members
+    post:
+      summary: Add new member to the specified group
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+          description: The ID of the group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  description: The ID of the user to add
+      responses:
+        '200':
+          description: Resource created successfully
+        '400':
+          description: Error adding member to group
+  /groups/{groupId}/members/{userId}:
+    delete:
+      summary: Remove a member from the specified group
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+          description: The ID of the group 
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+          description: The ID of the user to remove
+      responses:
+        '200':
+          description: Member removed successfully
+        '400':
+          description: Error executing delete
+  /groups/{groupId}/perms:
+    post:
+      summary: Add new permission to the specified group
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+          description: The ID of the group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Permission added successfully
+        '400':
+          description: Error adding permission to group
+    delete:
+      summary: Remove permission from the specified group
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+          description: The ID of the group to remove permission from
+      x-requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Permission removed successfully
+        '400':
+          description: Error executing delete
+  /domains:
+    get:
+      summary: Retrieve a list of all domains
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the domain list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of domains
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+    post:
+      summary: Create a new domain
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Domain created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating domain
+  /domains/{domId}:
+    get:
+      summary: Retrieve details of a specific domain
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Domain details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Domain not found
+        '400':
+          description: Error retrieving domain
+    put:
+      summary: Update an existing domain's information
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Domain updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error executing update
+    delete:
+      summary: Delete a specific domain
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain to delete
+      responses:
+        '200':
+          description: Domain deleted successfully
+        '400':
+          description: Error executing delete
+  /domains/{domId}/perms:
+    post:
+      summary: Add new permission to the specified domain
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Permission added successfully
+        '400':
+          description: Error adding permission to domain
+    delete:
+      summary: Remove permission from the specified domain
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain to remove permission from
+      x-requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Permission removed successfully
+        '400':
+          description: Error executing delete
+  /domains/{domId}/resources:
+    get:
+      summary: Retrieve resources associated with a specific domain
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the resource list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of resources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error retrieving resources
+    post:
+      summary: Create a new resource within a specific domain
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating resource
+  /domains/{domId}/resources/{resId}:
+    get:
+      summary: Retrieve details of a specific resource
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain to retrieve
+        - in: path
+          name: resId
+          required: true
+          schema:
+            type: string
+          description: The ID of the resource to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Resource details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Resource not found
+        '400':
+          description: Error retrieving resource
+    delete:
+      summary: Delete resource from a specific domain
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: domId
+          required: true
+          schema:
+            type: string
+          description: The ID of the domain
+        - in: path
+          name: resId
+          required: true
+          schema:
+            type: string
+          description: The ID of the resource to delete
+      responses:
+        '200':
+          description: Resource deleted successfully
+        '400':
+          description: Error executing delete
+  /components:
+    get:
+      summary: Retrieve a list of all components
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the components list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of components retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+    post:
+      summary: Create a new component
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Component created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating component
+  /components/{compId}:
+    get:
+      summary: Retrieve details of a specific component
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: compId
+          required: true
+          schema:
+            type: string
+          description: The ID of the component to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the components list
+      responses:
+        '200':
+          description: Component details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Component not found
+        '400':
+          description: Error retrieving component
+    put:
+      summary: Update an existing component's information
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: compId
+          required: true
+          schema:
+            type: string
+          description: The ID of the component to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Component updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error executing update
+    delete:
+      summary: Delete a specific component
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: compId
+          required: true
+          schema:
+            type: string
+          description: The ID of the component to delete
+      responses:
+        '200':
+          description: Component deleted successfully
+        '400':
+          description: Error executing delete
+  /components/{compId}/perms:
+    post:
+      summary: Add new permission to the specified component
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: compId
+          required: true
+          schema:
+            type: string
+          description: The ID of the component to add permission to
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Permission added successfully
+        '400':
+          description: Error adding permission to component
+    delete:
+      summary: Remove permission from the specified component
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: compId
+          required: true
+          schema:
+            type: string
+          description: The ID of the component to remove permission from
+      x-requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Permission removed successfully
+        '400':
+          description: Error executing delete
+  /deployments:
+    get:
+      summary: Retrieve a list of all deployments
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the deployments list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of deployments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+    post:
+      summary: Create a new deployment
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                componentdId:
+                  type: string
+                  description: The ID of the component to deploy
+                deployment:
+                  type: object
+                  description: Deployment configuration details
+      responses:
+        '200':
+          description: Deployment created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating deployment
+  /deployments/{instId}:
+    get:
+      summary: Retrieve details of a specific deployment
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the deployment/instance to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Deployment details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Deployment not found
+        '400':
+          description: Error retrieving deployment
+    delete:
+      summary: Delete a specific deployment
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the deployment/instance to delete
+      responses:
+        '200':
+          description: Deployment deleted successfully
+        '400':
+          description: Error executing delete
+  /deployments/{instId}/perms:
+    post:
+      summary: Add new permission to the specified deployment
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the deployment/instance to add permission to
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Permission added successfully
+        '400':
+          description: Error adding permission to deployment
+    delete:
+      summary: Remove permission from the specified deployment
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the deployment/instance to remove permission from
+      x-requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Permission removed successfully
+        '400':
+          description: Error executing delete
+  /instances:
+    get:
+      summary: Retrieve a list of all instances
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the instances list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of instances retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+    post:
+      summary: Create a new instance
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Instance created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error creating instance
+  /instances/{instId}:
+    get:
+      summary: Retrieve details of a specific instance
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the instance to retrieve
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the query
+      responses:
+        '200':
+          description: Instance details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving instance
+    delete:
+      summary: Delete a specific instance
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the instance to delete
+      responses:
+        '200':
+          description: Instance deleted successfully
+        '400':
+          description: Error executing delete
+  /instances/{instId}/graph:
+    get:
+      summary: Retrieve the deployment graph triggered by a specific instance
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: instId
+          required: true
+          schema:
+            type: string
+          description: The ID of the instance
+      responses:
+        '200':
+          description: Graph details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving graph
+  /graphs:
+    get:
+      summary: Retrieve a list of all deployment graphs
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: query
+          name: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter to apply to the graphs list
+        - in: query
+          name: opts
+          required: false
+          schema:
+            type: string
+          description: Optional additional options for the query
+      responses:
+        '200':
+          description: List of graphs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error executing query
+  /transactions/{txId}:
+    get:
+      summary: Retrieve details of a specific transaction
+      security:
+      - bearerAuth: []
+      parameters:
+        - in: path
+          name: txId
+          required: true
+          schema:
+            type: string
+          description: The ID of the transaction to retrieve
+      responses:
+        '200':
+          description: Transaction details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error retrieving transaction
