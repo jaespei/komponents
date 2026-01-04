@@ -21,7 +21,7 @@ COPY src /komponents/
 WORKDIR /komponents/
 
 # Install netcat
-RUN apt-get update && apt-get install -y netcat
+RUN apt-get update && apt-get install -y netcat-traditional
 RUN npm install
 
 # Start gateway

@@ -49,7 +49,7 @@
   hosts: host
   tasks:
     
-    # ---------- Create cluster
+    # ---------- Delete cluster
     - name: Delete cluster
       shell: 
         cmd: "go/bin/kind delete cluster --name {{ var_domainId }}" 

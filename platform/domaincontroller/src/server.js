@@ -22,7 +22,7 @@ class Server {
         this.server.use(bodyParser.json());
 
         this.server.use((req, res, next) => {
-            this.log(`${req.method} ${req.url}`);
+            //this.log(`${req.method} ${req.url}`);
             next();
         });
 

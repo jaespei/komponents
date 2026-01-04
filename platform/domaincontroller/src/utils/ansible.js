@@ -29,8 +29,8 @@ class Ansible {
      */
     constructor(opts) {
         this.opts = opts || {};
-        this.log = opts.log || ((msg) => console.log("[Ansible] " + msg));
-        this.error = opts.error || error;
+        this.log = this.opts.log || ((msg) => console.log("[Ansible] " + msg));
+        this.error = this.opts.error || error;
         this.pathHome = this.opts.pathHome || path.join(module.path, "ansible");
         this.pathPlaybooks = this.opts.pathPlaybooks || path.join(this.pathHome, "playbooks");
         this.resultKey = this.opts.resultKey || "KOMPONENTS_RESULT";
@@ -169,7 +169,9 @@ class Ansible {
                         }
                     }
 
-                } catch (err) { }
+                } catch (err) {
+                    this.log("Error parsing result: " + err);
+                 }
                 deferred.resolve(result);
             }
         });

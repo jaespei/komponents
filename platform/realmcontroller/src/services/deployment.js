@@ -20,7 +20,7 @@ class DeploymentService {
      * @param {Object} store - The store.
      * @param {Object} utils - Additional utilities
      * @param {Object} opts - Additional options
-     * @param {stirng} opts.host - The server host in format <addr>:<port>
+     * @param {string} opts.host - The server host in format <addr>:<port>
      * @param {string} opts.addr - The server address
      * @param {number} opts.port - The server port
      */

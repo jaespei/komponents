@@ -38,6 +38,7 @@ module.exports = {
     DOMAIN_K8S_PLANNINGSTRATEGY: "random",    // default resourceplanning strategy
     DOMAIN_K8S_WORKINGDIR: "working",
     DOMAIN_K8S_NAMESPACE: "default",
+    DOMAIN_K8S_REGISTRY_URL: process.env["DOCKER_REGISTRY_URL"] || "",
     DOMAIN_K8S_IMAGE_GATEWAY: "gateway:1.0",
     DOMAIN_K8S_IMAGE_PROXY: "proxy:1.0",
     DOMAIN_K8S_IMAGE_SIDECAR: "sidecar:1.0",

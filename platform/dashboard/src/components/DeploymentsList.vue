@@ -133,7 +133,7 @@
           <span class="text-h5">Add Deployment</span>
         </v-card-title>
         <v-card-text>
-          <deployment-add @cancel="addingDeployment = false" @accept="acceptAddDeployment"></deployment-add>
+          <deployment-add :component="selectedComponent" @cancel="cancelAddDeployment" @accept="acceptAddDeployment"></deployment-add>
         </v-card-text>
       </v-card>
     </v-dialog>
@@ -171,13 +171,18 @@ export default {
     DeploymentAdd,
   },
   props: {
-    mode: {
+    /*mode: {
       type: String,
       default: "list",
     },
+    component: {
+      type: String,
+      default: null
+    }*/
   },
   data() {
     return {
+      mode: "list",
       fixedFilters: [
         /*{ label: "Composite", value: "type=composite" },
         { label: "Basic", value: "type=basic" },*/
@@ -229,7 +234,8 @@ export default {
       userProfilePosition: { x: 0, y: 0 },
       selectedUser: "",
       confirmRemove: false,
-      selectedDeployment: undefined,
+      selectedDeployment: null,
+      selectedComponent: null // this.$route.query.component //(this.$route.state? this.$route.state.component: null)
     };
   },
   computed: {
@@ -237,7 +243,7 @@ export default {
       let query = {};
       for (let f of this.selectedFixedFilters) {
         let fields = f.split("=");
-        console.log(fields);
+        this.$util.log(fields);
         if (query[fields[0]] && Array.isArray(query[fields[0]]))
           query[fields[0]].push(fields[1]);
         else if (query[fields[0]])
@@ -266,21 +272,69 @@ export default {
   },
   created() {
     window.page = this;
-    this.refresh();
+    /*if (this.$route.query.mode == "add") {*/
+    if (this.$route.params.mode == "add") {
+      this.mode = "add";
+      this.selectedComponent = this.$route.params.component; //this.$route.query.component;
+      this.addingDeployment = true;
+    }
+    this.refresh(true);
   },
   destroyed() {
+    this.log("destroyed()");
+    clearTimeout(this.refreshTimeout);
     _.each(this.pending, (op) => (op.stop = true));
+
   },
   methods: {
     log(msg) {
-      console.log(`[DeploymentsList] ${msg}`);
+      this.$util.log(`[DeploymentsList] ${msg}`);
     },
-    async refresh() {
+    async refresh(first) {
       this.log("refresh()");
-      this.loading = true;
+      if (first) this.loading = true;
       try {
+        let prepare = async(deployment) => {
+          deployment.perm = this.perm(deployment);
+          let label = _.find(deployment.labels, (label) => {
+            if (label.startsWith("perm=")) {
+              let [name, perm] = label.split("=");
+              let [role, right] = perm.split(":");
+              if (right == "o" && role != 0) return true;
+            }
+            return false;
+          });
+          let [name, perm] = label.split("=");
+          let [role, right] = perm.split(":");
+          deployment.owner = role;
+          if (!this.users[deployment.owner]) {
+            let [user] = await this.$model.listUsers(this.$root.user.token, {
+              id: deployment.owner,
+            });
+            if (user) this.$set(this.users, deployment.owner, user);
+          }
+        }
+      
         let result = await this.$model.listDeployments(this.$root.user.token);
-        this.deployments.splice(0, this.deployments.length);
+        for (let d of result) {
+          let index = this.deployments.findIndex((_d => _d.id == d.id));
+          if (index == -1) {
+            this.deployments.push(d);
+            prepare(d);
+          } else if (this.deployments[index].state != d.state) {
+            this.deployments.splice(index, 1, d);
+            prepare(d);
+          }          
+        }
+        for (let d of this.deployments) {
+          let index = result.findIndex((_d => _d.id == d.id));
+          if (index == -1) {
+            this.deployments.splice(index, 1);
+          }
+        }
+
+
+        /*this.deployments.splice(0, this.deployments.length);
         _.each(result, async (deployment) => {
           this.deployments.push(deployment);
           deployment.perm = this.perm(deployment);
@@ -302,21 +356,22 @@ export default {
             });
             if (user) this.$set(this.users, deployment.owner, user);
           }
-        });
+        });*/
+
       } catch (err) {
         this.$root.error(err, "Unable to obtain deployments", 5000);
       } finally {
-        this.loading = false;
+        if (first) this.loading = false;
+        // refresh after 5s
+        this.refreshTimeout = setTimeout(() => {
+          this.refresh(false);
+        }, 5000);
       }
     },
     openAddDeployment() {
       this.log("openAddDeployment()");
+      this.selectedComponent = null;
       this.addingDeployment = true;
-    },
-    cancelAddDeployment() {
-      this.log("cancelAddDeployment()");
-      this.addingDeployment = false;
-      this.resetAddDeployment(true);
     },
     async acceptAddDeployment(ev) {
       this.log(`acceptAddDeployment(${JSON.stringify(ev.deployment)})`);
@@ -352,16 +407,22 @@ export default {
         return;
       } finally {
         this.loading = false;
+        if (this.mode == "add") {
+          this.mode = "list";
+          this.$router.replace({path: "/deployments"});
+        }
       }
 
-      // 2. Wait for pending op
+      //this.pending.push(ev.op);
+
+      /*// 2. Wait for pending op
       try {
         let result = await this.$util.loop(
           async () => {
             if (op.stop) return true;
             let tx = await this.$model.findTransactionById(
               this.$root.user.token,
-              txId
+              ev.txId
             );
             if (tx.state == "Completed") {
               [result] = await this.$model.listDeployments(
@@ -383,8 +444,18 @@ export default {
       } catch (err) {
         this.$root.error(
           err,
-          `The deployment ${op.deployment.title} was not added`
+          `The deployment ${ev.deployment.title} was not added`
         );
+      }*/
+
+
+
+    },    
+    cancelAddDeployment() {
+      this.addingDeployment = false;
+      if (this.mode == "add") {
+        this.mode = "list";
+        this.$router.replace({path: "/deployments"});
       }
     },
     openEditDeployment(deployment) {

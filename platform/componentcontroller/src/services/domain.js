@@ -63,7 +63,7 @@ class DomainService {
      * @return {Object} The query results
      */
     async listDomains(query, opts) {
-        this.log(`listDomains(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
+        //this.log(`listDomains(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
         try {
             let { data:result } = await axios.get(
                 `http://${this.opts.addr}:${this.opts.port}/domains`,
@@ -128,7 +128,7 @@ class DomainService {
      * @return {Object} The query results
      */
     async listResources(query, opts) {
-        this.log(`listResources(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
+        //this.log(`listResources(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
         try {
             let { data:result } = await axios.get(
                 `http://${this.opts.addr}:${this.opts.port}/resources`,
@@ -199,7 +199,7 @@ class DomainService {
      * @return {Object} The query results
      */
     async listCollections(query, opts) {
-        this.log(`listCollections(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
+        //this.log(`listCollections(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
 
         try {
             let { data:result } = await axios.get(
@@ -272,7 +272,7 @@ class DomainService {
      * @return {Object} The query results
      */
     async listLinks(query, opts) {
-        this.log(`listLinks(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
+        //this.log(`listLinks(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
 
         try {
             let { data:result } = await axios.get(
@@ -345,7 +345,7 @@ class DomainService {
      * @return {Object} The query results
      */
     async listInstances(query, opts) {
-        this.log(`listInstances(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
+        //this.log(`listInstances(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
 
         try {
             let { data:result } = await axios.get(
@@ -372,7 +372,7 @@ class DomainService {
      * @return {Object} The query results
      */
     async listTransactions(query, opts) {
-        this.log(`listTransactions(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
+        //this.log(`listTransactions(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
 
         try {
             let { data:result } = await axios.get(

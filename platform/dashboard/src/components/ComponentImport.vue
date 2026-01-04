@@ -159,6 +159,20 @@
                 ></components-list>
               </v-col>
             </v-row>
+            <v-row v-if="selectedMode == 'file'">
+              <v-col cols="12">
+                <v-file-input
+                  ref="fileImport"
+                  chips         
+                  :rules="[checkFileToImport]"
+                  required
+                  v-model="file"               
+                  label="File*"
+                  accept="text/*,.json,.yaml,.component,.model"
+                  @change="changeFileToImport"
+                ></v-file-input>
+              </v-col>
+            </v-row>
 
             <!---------------- Import from library  -------------->
             <!--v-row v-if="addDomain.type == 'kind/k8s'">
@@ -254,6 +268,7 @@
 import ComponentsList from "./ComponentsList";
 //import SearchBar from "@/components/SearchBar";
 //import ComponentDetails from "@/components/ComponentDetails";
+import YAML from 'yaml';
 
 export default {
   name: "ComponentImport",
@@ -272,8 +287,8 @@ export default {
       valid: false,
       importModes: [
         { text: "Library", value: "library", disabled: false },
-        { text: "File", value: "file", disabled: true },
-        { text: "URL", value: "url", disabled: true },
+        { text: "File", value: "file", disabled: false },
+        /*{ text: "URL", value: "url", disabled: true },*/
       ],
       rules: {
         required: (value) => !!value || "Required.",
@@ -282,7 +297,7 @@ export default {
       },
       selectedMode: "",
       selectedComponent: null,
-
+      file: null,
       /*
       currentMode: "library",
       showDialog: true,
@@ -296,7 +311,7 @@ export default {
       component: null,*/
     };
   },
-  computed: {
+  computed: { 
     /*selectedMode() {
       return this.mode || this.currentMode;
     },
@@ -327,9 +342,9 @@ export default {
     accept() {
       this.log(`accept()`);
       this.$emit("action", {
-        type: "accept",
-        component: this.selectedComponent,
-      });
+          type: "accept",
+          component: this.selectedComponent,
+        });         
     },
     cancel() {
       this.log(`cancel()`);
@@ -339,7 +354,54 @@ export default {
       this.log(`selectComponent(${component && component.id})`);
       this.selectedComponent = component;
     },
-
+    checkFileToImport(file) {
+      if (file) return true;
+      if (!file && this.valid) return "Required.";
+      return "Invalid file.";
+    },
+    changeFileToImport(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.addEventListener('load', (event) => {
+        let content = event.target.result;
+        try {
+          content = YAML.parse(content);
+        } catch(err) {
+          try {
+            content = JSON.parse(content);
+          } catch (err) {
+            content = undefined;
+          }
+        }
+        if (content) {
+          this.$util.log(`[ComponentImport] changeFileToImport(${JSON.stringify(content)})`);
+          this.valid = true;
+          if (content.model) {
+            this.selectedComponent = content;
+          } else {
+            this.selectedComponent = {
+              type: content.type,
+              name: content.name,
+              summary: "",
+              desc: "",
+              labels: [],
+              model: content,
+              layout: {},
+              pict: ""
+            };
+          }
+          /*this.importComponent.invalid = false;
+          this.importComponent.content = content;
+          this.importComponent.title = content.name;*/
+        } else {
+          this.valid = false;
+          this.selectedComponent = null;
+          /*this.importComponent.invalid = true;
+          this.importComponent.file = undefined;*/
+        }
+      });
+      reader.readAsText(file);
+    },
     /*selectMode(mode) {
       this.$util.log(`[ComponentImport] selectMode(${mode})`);
       this.currentMode = mode;

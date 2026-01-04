@@ -744,10 +744,11 @@ class ComponentService {
         // Initialize subcomponents
         await _.eachAsync(model.subcomponents, async (subcomp, subcompName) => {
             let subcompType = model.imports[subcomp.type];
-            if (subcompType.type == "basic") {
+            let submodel = await this._resolveModel(subcomp, subcompType);
+            if (submodel.type == "basic") {
 
                 let inputs = {}, outputs = {};
-                _.each(subcompType.endpoints, (ep, epName) => {
+                _.each(submodel.endpoints, (ep, epName) => {
                     if (ep.type == "in") inputs[epName] = ep.protocol;
                     else if (ep.type == "out") outputs[epName] = ep.protocol;
                 });
@@ -773,7 +774,7 @@ class ComponentService {
                 collections[collection.id] = collection;
                 await this.store.insert("collections", collection);
 
-            } else if (subcompType.type == "composite") {
+            } else if (submodel.type == "composite") {
 
                 // Schedule instances
                 let scheduler = subcomp.schedule || subcompType.schedule || "basic";
@@ -785,8 +786,8 @@ class ComponentService {
                 // Build subtrees
                 await _.eachAsync(events, async event => {
                     if (event.type == "InstanceAdd") {
-                        let model = await this._resolveModel(subcomp, subcompType);
-                        let result = await this._buildTree(root, subcompName, model);
+                        //let model = await this._resolveModel(subcomp, subcompType);
+                        let result = await this._buildTree(root, subcompName, submodel);
                         Object.assign(collections, result.collections);
                     }
                 });
@@ -799,10 +800,11 @@ class ComponentService {
             _.filter(model.connectors, con => con.type != "Link"),
             async con => {
                 let conType = model.imports[con.type];
-                if (conType.type == "basic") {
+                let submodel = await this._resolveModel(con, conType);
+                if (submodel.type == "basic") {
 
                     let inputs = {}, outputs = {};
-                    _.each(conType.endpoints, (ep, epName) => {
+                    _.each(submodel.endpoints, (ep, epName) => {
                         if (ep.type == "in") inputs[epName] = ep.protocol;
                         else if (ep.type == "out") outputs[epName] = ep.protocol;
                     });
@@ -853,8 +855,8 @@ class ComponentService {
                     // Build subtrees
                     await _.eachAsync(events, async event => {
                         if (event.type == "InstanceAdd") {
-                            let model = await this._resolveModel(con, conType);
-                            let result = await this._buildTree(root, conName, model);
+                            //let model = await this._resolveModel(con, conType);
+                            let result = await this._buildTree(root, conName, submodel);
                             Object.assign(collections, result.collections);
                         }
                     });
@@ -1442,6 +1444,7 @@ class ComponentService {
 
         // Initialize shared properties
         model.labels = model.labels || [];
+        model.cardinality = model.cardinality || "[1:1]";
         model.variables = model.variables || {};
         model.volumes = model.volumes || {};
         model.endpoints = model.endpoints || {};
@@ -1454,6 +1457,13 @@ class ComponentService {
         _.each(deployment.variables, (varVal, varName) => deployVars[varName] = String(varVal));
         let variables = {};
         _.merge(variables, modelVars, deployVars);
+
+        // Resolve variables (allow embedded variables)
+        _.each(variables, (varVal, varName) => {
+            variables[varName] = this._text(
+                varVal, { eval: variables }
+            );
+        });
 
         let resolved = {
             type: this._text(
@@ -1614,11 +1624,12 @@ class ComponentService {
 
                 // - Subcomponent variables
                 _subcomp.variables = {};
+                let subcompVars = _.merge({}, subcomp.variables, variables);
                 _.each(subcomp.variables, (varVal, varName) => {
                     if (!subcompType.variables || !(varName in subcompType.variables))
                         throw this.error(`Error in model: variable ${varName} not published by subcomponent ${subcompName}`);
                     _subcomp.variables[varName] = this._text(
-                        varVal, { eval: variables }
+                        varVal, { eval: subcompVars }
                     );
                 });
 
@@ -1669,6 +1680,8 @@ class ComponentService {
                     ),
                     domains: con.domains || resolved.domains
                 };
+
+                
 
                 // - Validate outputs
                 let outProtocol;
@@ -2590,7 +2603,7 @@ class ComponentService {
      */
     _evalModel(deployment, model, ctxt) {
         this._evalModel(`_evalModel(${JSON.stringify(model)},${JSON.stringify(ctxt)})`);
-
+ 
     }
 
     /**
@@ -2801,7 +2814,7 @@ class ComponentService {
      * @param {Object} opts.eval - Evaluate expressions
      */
     _text(val, opts) {
-        this.log(`_text(${val},${JSON.stringify(opts)})`);
+        //this.log(`_text(${val},${JSON.stringify(opts)})`);
         opts = opts || {};
         if (opts.required && !val) throw new Error("Value required" + (opts.att ? ` for attribute ${opts.att}` : ""));
         if (!val) return val;

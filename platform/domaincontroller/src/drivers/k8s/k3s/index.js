@@ -3,12 +3,16 @@ const path = require("path");
 const crypto = require("crypto");
 const { K8sDriver } = require("../k8s");
 
+// Patch for enabling TLS connection using self-signed certificates
+// By default K3s generates and uses a self-signed certificate
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
+
 /**
  * Domain driver implementation of kind-based K8S clusters.
  * 
  * @author Javier Esparza-Peidro <jesparza@dsic.upv.es>
  */
-class K8sKindDriver extends K8sDriver {
+class K3sDriver extends K8sDriver {
 
     /**
      * Initializes the driver. Dependencies are injected as 
@@ -20,9 +24,9 @@ class K8sKindDriver extends K8sDriver {
      */
     constructor(drivers, store, utils) {
         super(store, utils);
-        if (!drivers) throw new Error("Unable to initialize K8sKindDriver: missing drivers");
-        if (!store) throw new Error("Unable to initialize K8sKindDriver: missing store");
-        if (!utils) throw new Error("Unable to initialize K8sKindDriver: missing utilities");
+        if (!drivers) throw new Error("Unable to initialize K3sDriver: missing drivers");
+        if (!store) throw new Error("Unable to initialize K3sDriver: missing store");
+        if (!utils) throw new Error("Unable to initialize K3sDriver: missing utilities");
         this.drivers = drivers;
         this.store = store;
         this.utils = utils;
@@ -33,14 +37,14 @@ class K8sKindDriver extends K8sDriver {
                 pathPlaybooks: path.join(module.path, "ansible", "playbooks"),
             }
         );
-        this.log = utils.log || ((msg) => console.log("[K8sKindDriver] " + msg));
+        this.log = utils.log || ((msg) => console.log("[K3sDriver] " + msg));
     }
 
     /**
      * Add a new domain.
      * 
      * @param {Object} domain - The domain data
-     * @param {string} domain.type - The domain type "kind/k8s"
+     * @param {string} domain.type - The domain type "k3s/k8s"
      * @param {string} domain.title - The domain title
      * @param {Array<string>} domain.labels - The domain labels
      * @param {string} [domain.privateKey] - The domain private key
@@ -50,6 +54,7 @@ class K8sKindDriver extends K8sDriver {
      * @param {string} domain.hostUser - The host user
      * @param {string} [domain.hostPassword] - The host password
      * @param {string} [domain.hostPrivateKey] The host private key
+     * @param {string} [domain.registryUrl] - The private Docker registry
      * @param {string} [domain.namespace] - The domain namespace
      * @param {number} [domain.masterNodes] - The number of master nodes
      * @param {number} [domain.workerNodes] - The number of worker nodes
@@ -73,15 +78,14 @@ class K8sKindDriver extends K8sDriver {
         domain.id = this.utils.uuid();
         domain.user = domain.user || this.utils.constants.DOMAIN_K8S_USER;
         domain.namespace = domain.namespace || this.utils.constants.DOMAIN_K8S_NAMESPACE;
-        domain.masterNodes = domain.masterNodes || this.utils.constants.DOMAIN_KIND_MASTERNODES;
-        domain.workerNodes = domain.workerNodes || this.utils.constants.DOMAIN_KIND_WORKERNODES;
-        domain.apiPort = domain.apiPort || (20000 + Math.floor(Math.random() * 10000));
+        domain.apiPort = domain.apiPort || 6443;
         domain.gwPort = domain.gwPort || (30000 + Math.floor(Math.random() * 2768));
         domain.gwPrivatePort = domain.gwPrivatePort || this.utils.constants.DOMAIN_K8S_GATEWAY_PORT;
-        domain.ingressPort = domain.ingressPort || (30000 + Math.floor(Math.random() * 2768));
-        domain.ingressSecurePort = domain.ingressSecurePort || (30000 + Math.floor(Math.random() * 2768));
+        domain.ingressPort = domain.ingressPort || 80;
+        domain.ingressSecurePort = domain.ingressSecurePort || 443;
         domain.podSubnet = domain.podSubnet || this.utils.randsubnet(); //"10.244.0.0/16";
         domain.serviceSubnet = domain.serviceSubnet || this.utils.randsubnet(); // "10.96.0.0/12";*/
+        domain.registryUrl = domain.registryUrl || this.utils.constants.DOMAIN_K8S_REGISTRY_URL;
 
         // 1. Generate domain keys
         if (!domain.privateKey || !domain.publicKey) {
@@ -114,8 +118,6 @@ class K8sKindDriver extends K8sDriver {
                 var_domainUser: domain.user,
                 var_domainPrivateKey: domain.privateKey,
                 var_hostAddr: domain.hostAddr,
-                var_masterNodes: domain.masterNodes,
-                var_workerNodes: domain.workerNodes,
                 var_domainId: domain.id,
                 var_apiPort: domain.apiPort,
                 var_gwPort: domain.gwPort,
@@ -124,14 +126,15 @@ class K8sKindDriver extends K8sDriver {
                 var_ingressSecurePort: domain.ingressSecurePort,
                 var_imagesPath: path.join(module.path, '..', 'k8s'),
                 var_podSubnet: domain.podSubnet,
-                var_serviceSubnet: domain.serviceSubnet
+                var_serviceSubnet: domain.serviceSubnet,
+                var_registryUrl: domain.registryUrl
             }
         };
 
         // --- Execute Ansible -----
         let result = await this.ansible.playbook("domainadd", opts);
         // -------------------------
-
+        
         // Insert data
         let _domain = {
             id: domain.id,
@@ -149,13 +152,12 @@ class K8sKindDriver extends K8sDriver {
                 privateKey: domain.privateKey,
                 publicKey: domain.publicKey,
                 namespace: domain.namespace,
-                masterNodes: domain.masterNodes,
-                workerNodes: domain.workerNodes,
-                kubeconfig: result.result.host.config,
+                kubeconfig: result.result.host.config.replace("https://127.0.0.1:6443", `https://${domain.hostAddr}:6443`),
                 apiPort: domain.apiPort,
                 gwPrivatePort: domain.gwPrivatePort,
                 podSubnet: domain.podSubnet,
-                serviceSubnet: domain.serviceSubnet
+                serviceSubnet: domain.serviceSubnet,
+                registryUrl: domain.registryUrl
             },
             data: {},
             state: "init",
@@ -325,7 +327,7 @@ class K8sKindDriver extends K8sDriver {
      * @param {string} [instance.durability] - The instance durability     * 
      * @param {Object} [instance.events] - The instance event handlers
      * @param {Object} ctxt - The operation context
-     */
+     *
     async addInstance(domain, collection, instance, ctxt) {
         this.log(`addInstance(${domain.id},${collection.id},${JSON.stringify(instance)})`);
 
@@ -382,12 +384,12 @@ class K8sKindDriver extends K8sDriver {
 
         return _instance;
 
-    }
+    }*/
 
 
 }
 
 
 module.exports = (drivers, store, utils) => {
-    return new K8sKindDriver(drivers, store, utils);
+    return new K3sDriver(drivers, store, utils);
 }

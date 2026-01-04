@@ -44,7 +44,7 @@ Link related commands:
     link list [-q <query>] [-o <opts>]
     
 Transaction related commands:
-    transactions [-q <query>] [-o <opts>]
+    transaction list [-q <query>] [-o <opts>]
     `;
 
     console.log(str);

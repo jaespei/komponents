@@ -89,7 +89,7 @@ export default {
   },
   methods: {
     appendFilter(text) {
-      console.log(`[SearchBar] appendFilter(${text})`);
+      this.$util.log(`[SearchBar] appendFilter(${text})`);
       if (text) {
         let filter = null;
         if (text.indexOf("=") != -1) {
@@ -109,7 +109,7 @@ export default {
       }
     },
     removeFilter(filter) {
-      console.log(`[SearchBar] removeFilter(${filter.value})`);
+      this.$util.log(`[SearchBar] removeFilter(${filter.value})`);
       let index = this.currentFilters.findIndex((f) => f.value == filter.value);
       this.currentFilters.splice(index, 1);
       index = this.currentSelectedFilters.findIndex((f) => f.value == filter.value);

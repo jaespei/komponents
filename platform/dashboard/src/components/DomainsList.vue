@@ -183,6 +183,65 @@
                 </v-col>
               </v-row>
 
+              <!---------------- k3s/k8s  -------------->
+              <v-row v-if="addDomain.type == 'k3s/k8s'">
+                <v-col cols="12">
+                  <v-text-field
+                    clearable
+                    label="Host address*"
+                    :rules="[rules.required, rules.address]"
+                    hint="Host where K3s will be installed"
+                    required
+                    v-model="addDomain.hostAddr"
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    clearable
+                    label="SSH user*"
+                    :rules="[rules.required]"
+                    required
+                    v-model="addDomain.hostUser"
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    clearable
+                    type="password"
+                    label="SSH password"
+                    :rules="[passwordOrKey]"
+                    v-model="addDomain.hostPassword"
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="12">
+                  <v-text-field
+                    label="Docker Registry"            
+                    hint="Docker Registry URL"
+                    v-model="addDomain.registryUrl"
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="12" md="4" align-self="center" justify="center">
+                  <v-btn small @click="openPrivateKey"
+                    >Set SSH private key</v-btn
+                  >
+                  <input
+                    id="filePrivateKey"
+                    @change="savePrivateKey"
+                    type="file"
+                    style="display: none"
+                  />
+                </v-col>
+                <v-col v-if="addDomain.hostPrivateKey" cols="12" md="8">
+                  <v-textarea
+                    outlined
+                    label="Private key"
+                    :value="addDomain.hostPrivateKey"
+                    no-resize
+                    rows="2"
+                  ></v-textarea>
+                </v-col>
+              </v-row>
+
               <!---------------- kind/k8s  -------------->
               <v-row v-if="addDomain.type == 'kind/k8s'">
                 <v-col cols="12">
@@ -237,6 +296,20 @@
 
               <!---------------- external/k8s  -------------->
               <v-row v-if="addDomain.type == 'external/k8s'">
+                <v-col cols="12">
+                  <v-text-field
+                    label="Docker Registry"            
+                    hint="Docker Registry URL"
+                    v-model="addDomain.registryUrl"
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="12">
+                  <v-text-field
+                    label="Gateway"            
+                    hint="Gateway URL"
+                    v-model="addDomain.gateway"
+                  ></v-text-field>
+                </v-col>
                 <v-col cols="12" md="4" align-self="center" justify="end">
                   <v-btn small @click="openKubeConfig">Set Kubeconfig*</v-btn>
                   <input
@@ -245,7 +318,7 @@
                     type="file"
                     style="display: none"
                   />
-                </v-col>
+                </v-col>                
                 <v-col cols="12" md="8">
                   <v-textarea
                     outlined
@@ -256,6 +329,7 @@
                     rows="2"
                   ></v-textarea>
                 </v-col>
+                
               </v-row>
             </v-form>
           </v-container>
@@ -366,6 +440,7 @@ export default {
       loading: false,
       addingDomain: false,
       domainTypes: [
+        { text: "K3s", value: "k3s/k8s", disabled: false },
         { text: "Kubernetes in Kind", value: "kind/k8s", disabled: false },
         { text: "External Kubernetes", value: "external/k8s", disabled: false },
         {
@@ -394,6 +469,8 @@ export default {
         hostPassword: "",
         hostPrivateKey: "",
         kubeconfig: "",
+        registryUrl: "",
+        gateway: ""
       },
       rules: {
         required: (value) => !!value || "Required.",
@@ -418,7 +495,7 @@ export default {
       let query = {};
       for (let f of this.selectedFixedFilters) {
         let fields = f.split("=");
-        console.log(fields);
+        this.$util.log(fields);
         if (query[fields[0]] && Array.isArray(query[fields[0]]))
           query[fields[0]].push(fields[1]);
         else if (query[fields[0]])
@@ -458,7 +535,7 @@ export default {
   },
   methods: {
     log(msg) {
-      //console.log(`[DomainsList] ${msg}`);
+      //this.$util.log(`[DomainsList] ${msg}`);
     },
     async refresh() {
       this.log("refresh()");
@@ -550,6 +627,7 @@ export default {
               txId
             );
             if (tx.state == "Completed") {
+              let result;
               [result] = await this.$model.listDomains(this.$root.user.token, {
                 id: tx.target,
               });
@@ -576,7 +654,7 @@ export default {
       var reader = new FileReader();
       reader.onloadend = () => {
         this.addDomain.hostPrivateKey = reader.result;
-        console.log(this.addDomain.hostPrivateKey);
+        this.$util.log(this.addDomain.hostPrivateKey);
       };
       //reader.readAsDataURL(file);
       reader.readAsText(file);
@@ -590,7 +668,7 @@ export default {
       var reader = new FileReader();
       reader.onloadend = () => {
         this.addDomain.kubeconfig = reader.result;
-        console.log(this.addDomain.kubeconfig);
+        this.$util.log(this.addDomain.kubeconfig);
       };
       //reader.readAsDataURL(file);
       reader.readAsText(file);
@@ -606,6 +684,8 @@ export default {
       this.addDomain.hostPassword = "";
       this.addDomain.hostPrivateKey = "";
       this.addDomain.kubeconfig = "";
+      this.addDomain.registryUrl = "";
+      this.addDomain.gateway = "";
     },
     openEditDomain(domain) {
       this.log("openEditDomain()");

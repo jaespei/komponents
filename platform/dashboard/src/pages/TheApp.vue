@@ -47,7 +47,7 @@
     </v-navigation-drawer>
     <v-main style="height: 100%">
       <router-view></router-view>
-      <v-alert v-model="$root.isError" type="error" dismissible>{{
+      <v-alert v-model="$root.isError" type="error" max-height="400" max-width="400" ismissible>{{
         $root.errorMsg
       }}</v-alert>
       <v-alert v-model="$root.isSuccess" type="success" dismissible>{{
@@ -76,8 +76,8 @@ export default {
   data: () => ({
     items: [
       { title: "Dashboard", icon: "mdi-view-dashboard", path: "/dashboard", disabled: true },
-      { title: "Components", icon: "mdi-cube", path: "/components", disabled: false },
       { title: "Domains", icon: "mdi-server", path: "/domains", disabled: false },
+      { title: "Components", icon: "mdi-cube", path: "/components", disabled: false },
       { title: "Deployments", icon: "mdi-graph", path: "/deployments", disabled: false },
       { title: "Volumes", icon: "mdi-database", path: "/volumes", disabled: true },      
       { title: "Users", icon: "mdi-account-group", path: "/users", disabled: true },

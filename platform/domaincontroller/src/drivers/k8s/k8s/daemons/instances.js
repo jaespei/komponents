@@ -104,7 +104,7 @@ class InstancesDaemon {
      * @param {Object} ctxt - Operation context
      */
     async _refreshInstances(opts, ctxt) {
-        this.log(`_refreshInstances(${JSON.stringify(opts)})`);
+        //this.log(`_refreshInstances(${JSON.stringify(opts)})`);
 
         opts = opts || {};
         opts.range = opts.range || this.opts.range;
@@ -204,7 +204,7 @@ class InstancesDaemon {
      * @param {*} inst 
      */
     async _pingInstance(inst, ctxt) {
-        this.log(`_pingInstance(${inst.id})`);
+        //this.log(`_pingInstance(${inst.id})`);
 
         let pods = await this._listPods(
             ctxt.domains[inst.domain],
@@ -237,7 +237,7 @@ class InstancesDaemon {
      * @param {Object} query 
      */
     async _listPods(domain, query) {
-        this.log(`_listPods(${JSON.stringify(query)})`);
+        //this.log(`_listPods(${JSON.stringify(query)})`);
 
         try {
             let kc = new k8s.KubeConfig();

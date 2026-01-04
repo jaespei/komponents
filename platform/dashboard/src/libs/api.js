@@ -1064,5 +1064,5 @@ class RealmAPI {
 
 export default new RealmAPI({
     //host: "192.168.1.20:8000"
-    host: "127.0.0.1:8000"
+    host: "realmcontroller:8000"
 });

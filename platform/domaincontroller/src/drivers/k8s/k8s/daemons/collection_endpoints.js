@@ -180,7 +180,7 @@ class CollectionEndpointsDaemon {
      * Open connection against the specified domain.
      */
     _connect(domain) {
-        this.log(`_connect(${domain.id})`);
+        //this.log(`_connect(${domain.id})`);
         let kc = new k8s.KubeConfig();
         kc.loadFromString(domain.cfg.kubeconfig);
         let k8sCon = kc.makeApiClient(k8s.CoreV1Api);

@@ -31,10 +31,23 @@ export default new Router({
             props: true
         },
         {
+            path: '/deploy/:component/:mode',
+            name: 'TheDeploymentsPage',
+            component: TheDeploymentsPage,
+            props: true
+        },
+        {
             path: '/deployments',
             name: 'TheDeploymentsPage',
-            component: TheDeploymentsPage
+            component: TheDeploymentsPage,
+            props: true
         },
+        /*{
+            path: '/deployments/:component/:mode',
+            name: 'TheDeploymentsPage',
+            component: TheDeploymentsPage,
+            props: true
+        },*/
         {
             path: '/deployments/:id',
             name: 'TheDeploymentPage',

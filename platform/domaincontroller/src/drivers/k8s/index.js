@@ -3,7 +3,8 @@
 module.exports = (drivers, store, utils) => {
     return {
         "external/k8s": require("./external")(drivers, store, utils),
-        "kind/k8s": require("./kind")(drivers, store, utils)
+        "kind/k8s": require("./kind")(drivers, store, utils),
+        "k3s/k8s": require("./k3s")(drivers, store, utils)
     }
     /*return {
         "metal/k8s": Object.assign(require("./metal")(drivers, store, utils), require("./k8s")(drivers, store, utils)),

@@ -7,6 +7,7 @@ services:
       HOST: 0.0.0.0:10000
     ports:
       - "10000:10000"
+    network_mode: host
   componentcontroller:
     build:
       context: .
@@ -18,6 +19,7 @@ services:
       - "9000:9000"
     depends_on:
       - domaincontroller
+    network_mode: host
   realmcontroller:
     build:
       context: .
@@ -30,6 +32,8 @@ services:
       - "8000:8000"
     depends_on:
       - componentcontroller
+      - domaincontroller
+    network_mode: host
   dashboard:
     build:
       context: .
@@ -38,3 +42,4 @@ services:
       - "8080:8080"
     depends_on:
       - realmcontroller
+    network_mode: host

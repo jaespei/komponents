@@ -2,7 +2,7 @@
   <div class="deployment-add">
     <v-stepper v-model="step" flat outlined>
       <v-stepper-header>
-        <v-stepper-step :complete="step > 1" step="1">
+        <v-stepper-step  v-if="!component" :complete="step > 1" step="1">
           Select component
         </v-stepper-step>
         <v-divider></v-divider>
@@ -14,7 +14,7 @@
       </v-stepper-header>
 
       <v-stepper-items>
-        <v-stepper-content step="1">
+        <v-stepper-content v-if="!component" :step="1">
           <components-list
             mode="select"
             type="composite"
@@ -26,7 +26,7 @@
           <v-btn text @click="cancel"> Cancel </v-btn>
         </v-stepper-content>
 
-        <v-stepper-content step="2">
+        <v-stepper-content :step="2">
           <v-form
             ref="deploymentForm"
             v-model="valid"
@@ -126,14 +126,14 @@
             <small>*Required field</small>
           </v-form>
 
-          <v-btn text @click="step--"> Back </v-btn>
+          <v-btn text v-if="!component" @click="step--"> Back </v-btn>
           <v-btn :disabled="!valid" color="primary" @click="step++">
             Continue
           </v-btn>
           <v-btn text @click="cancel"> Cancel </v-btn>
         </v-stepper-content>
 
-        <v-stepper-content step="3">
+        <v-stepper-content :step="3">
           <domains-list
             mode="multiselect"
             @select="selectDomains"
@@ -166,7 +166,7 @@ export default {
   },
   props: {
     component: {
-      type: Object,
+      type: String,
     },
     domains: {
       type: Array,
@@ -174,8 +174,8 @@ export default {
   },
   data() {
     return {
-      step: 1,
-      selectedComponent: this.component,
+      step: this.component? 2: 1,
+      selectedComponent: null,
       selectedDomains: this.domains || [],
       rules: {
         required: (value) => !!value || "Required",
@@ -195,6 +195,14 @@ export default {
   },
   created() {
     window.dlg = this;
+    if (this.component) {
+      this.$model.listComponents(this.$root.user.token, {id: this.component})
+        .then(result => {
+          if (result.length)
+          this.selectComponent(result[0]);
+        }); 
+      this.step = 2;
+    }
   },
   methods: {
     log(msg) {
@@ -248,7 +256,7 @@ export default {
     cancel() {
       this.$emit("cancel");
     },
-    accept() {
+    async accept() {
       this.log(`addDeployment()`);
       let event = {
         component: this.selectedComponent,
@@ -275,6 +283,25 @@ export default {
         }
       });
       // [TODO volumes??]
+
+      /*this.loading = true;
+      try {
+        event.txId = await this.$model.addDeployment(
+          this.$root.user.token,
+          event.component.id,
+          event.deployment
+        );        
+        event.op = {
+          id: Date.now(),
+          stop: false,
+        };
+        this.$root.success("The deployment is being added", 5000);
+      } catch (err) {
+        this.$root.error(err, "Unable to add deployment", 5000);
+        return;
+      } finally {
+        this.loading = false;
+      }*/
 
       this.$emit("accept", event);
     },

@@ -33,8 +33,9 @@
       when: var_privateKey is undefined
       openssh_keypair:
         path: "{{ var_privateKeyPath }}"
-        type: rsa
-        size: 4096
+        #type: rsa
+        type: ed25519
+        #size: 4096
         state: present
 
     - name: KOMPONENTS_RESULT
@@ -43,14 +44,14 @@
           privateKey: "{{ var_privateKey if var_privateKey is defined else lookup('file', '{{ var_privateKeyPath }}', rstrip=False) }}"
           publicKey: "{{ var_publicKey if var_publicKey is defined else lookup('file', '{{ var_privateKeyPath }}.pub', rstrip=False) }}"
 
-    - name: Clean-up keys
-      when: var_privateKey is not defined
-      file: 
-        path: "{{ item }}"
-        state: absent
-      with_items:
-        - "{{ var_privateKeyPath }}"
-        - "{{ var_privateKeyPath }}.pub"
+    # - name: Clean-up keys
+    #   when: var_privateKey is not defined
+    #   file: 
+    #     path: "{{ item }}"
+    #     state: absent
+    #   with_items:
+    #     - "{{ var_privateKeyPath }}"
+    #     - "{{ var_privateKeyPath }}.pub"
 
     
 

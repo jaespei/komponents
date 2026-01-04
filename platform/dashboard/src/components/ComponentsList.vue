@@ -101,23 +101,44 @@
         </template>
 
         <template v-if="mode == 'list'" v-slot:item.actions="{ item }">
-          <v-btn v-if="item.perm" icon outlined>
-            <v-icon @click.stop="openEditComponent(item)">
-              {{ item.perm == "read" ? "mdi-magnify" : "mdi-pencil" }}
-            </v-icon> </v-btn
-          >&nbsp;
-          <v-btn v-if="item.perm == 'owner'" icon outlined>
-            <v-icon @click.stop="openRemoveComponent(item)"
-              >mdi-delete</v-icon
-            > </v-btn
-          >&nbsp;
-          <v-btn icon outlined>
-            <v-icon @click.stop="exportComponent(item)">mdi-download</v-icon>
-          </v-btn>
+          <v-tooltip bottom v-if="item.perm"  >
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn icon outlined v-bind="attrs" v-on="on">
+                <v-icon @click.stop="openEditComponent(item)">
+                  {{ item.perm == "read" ? "mdi-magnify" : "mdi-pencil" }}
+                </v-icon> </v-btn>
+            </template>
+            <span>Edit</span>
+          </v-tooltip>
           &nbsp;
-          <v-btn v-if="appMode == 'dashboard'" icon outlined>
-            <v-icon @click.stop="openDeployComponent(item)">mdi-play</v-icon>
-          </v-btn>
+          <v-tooltip bottom v-if="item.perm == 'owner'"   >
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn icon outlined v-bind="attrs" v-on="on">
+                <v-icon @click.stop="openRemoveComponent(item)"
+                  >mdi-delete</v-icon
+                > </v-btn
+              >
+            </template>
+            <span>Delete</span>
+          </v-tooltip>
+          &nbsp;
+          <v-tooltip bottom >
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn icon outlined v-bind="attrs" v-on="on">
+                <v-icon @click.stop="exportComponent(item)">mdi-download</v-icon>
+              </v-btn>
+            </template>
+            <span>Export</span>
+          </v-tooltip>
+          &nbsp;
+          <v-tooltip bottom v-if="appMode == 'dashboard' && item.type == 'composite'" >
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn icon outlined v-bind="attrs" v-on="on">
+                <v-icon @click.stop="openDeployComponent(item)" >mdi-play</v-icon>
+              </v-btn>
+            </template>
+            <span>Deploy</span>
+          </v-tooltip>
         </template>
       </v-data-table>
     </v-container>
@@ -241,6 +262,17 @@
       </v-card>
     </v-dialog>
 
+    <!--v-dialog v-if="addingDeployment" v-model="addingDeployment" width="800">
+      <v-card elevation="1">
+        <v-card-title>
+          <span class="text-h5">Add Deployment</span>
+        </v-card-title>
+        <v-card-text>
+          <deployment-add @cancel="addingDeployment = false" @accept="acceptAddDeployment"></deployment-add>
+        </v-card-text>
+      </v-card>
+    </v-dialog-->
+
     <v-menu
       v-model="showComponentDetails"
       :close-on-content-click="false"
@@ -332,6 +364,7 @@ export default {
         },
       ],
       addingComponent: false,
+      //addingDeployment: false,
       componentTypes: [
         { text: "Basic", value: "basic", disabled: false },
         { text: "Composite", value: "composite", disabled: false },
@@ -358,7 +391,7 @@ export default {
       userProfilePosition: { x: 0, y: 0 },
       selectedUser: "",
       confirmRemove: false,
-      selectedComponent: undefined,
+      selectedComponent: null,
       showComponentDetails: false,
       componentDetailsPosition: { x: 0, y: 0 },
     };
@@ -509,6 +542,8 @@ export default {
             content = undefined;
           }
         }
+        this.log("changeFileToImport()");
+        this.log(JSON.stringify(content));
         if (content) {
           this.importComponent.invalid = false;
           this.importComponent.content = content;
@@ -525,9 +560,9 @@ export default {
       this.addingComponent = false;
       this.loading = true;
       let component = undefined;
-      console.log(this.addComponentMode);
+      this.$util.log(this.addComponentMode);
       if (this.addComponentMode == 0) {
-        console.log("NEW!!");
+        this.$util.log("NEW!!");
         component = {
           type: this.addComponent.type,
           title: this.addComponent.title,
@@ -618,6 +653,9 @@ export default {
     },
     openDeployComponent(component) {
       this.log("openDeployComponent()");
+      //this.$router.push({path: "/deployments", query: { mode:'add', component: component.id }});
+      this.$router.push({path: `/deploy/${component.id}/add`});//, params: { mode:'add', component: component.id }});
+      //this.$router.push({path: "/deployments", state: { mode:'add', component: component }})
     },
     tags(component) {
       let tags = [];

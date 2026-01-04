@@ -95,7 +95,7 @@ class ProjectionDaemon {
      * Execute all tests.
      */
     async run() {
-        this.log("run()");
+        //this.log("run()");
 
         // 0. Create common context, to share domains/collections
         try {
@@ -151,7 +151,7 @@ class ProjectionDaemon {
      * @param {Array<string>|Array<Object>} [opts.collections] - The collections to sync
      */
     async _syncCollections(opts, ctxt) {
-        this.log(`_syncCollections(${JSON.stringify(opts)})`);
+        //this.log(`_syncCollections(${JSON.stringify(opts)})`);
 
         opts = opts || {};
         ctxt = ctxt || {};
@@ -183,7 +183,11 @@ class ProjectionDaemon {
             let promise = this._removeCollection(col, ctxt);
             promises.push(promise);
         }
-        await Q.waitAll(promises);
+        try {
+            await Q.waitAll(promises);
+        } catch (err) {
+            this.log(`Error syncing collections (continue anyway): ${err.stack}`)
+        }
 
         // 2. Add collections
         let toAdd = _.filter(
@@ -235,7 +239,7 @@ class ProjectionDaemon {
      * @param {Object} ctxt - The operation context
      */
     async syncCollection(collection, ctxt) {
-        this.log(`syncCollection(${JSON.stringify(collection)})`);
+        //this.log(`syncCollection(${JSON.stringify(collection)})`);
 
         await this._addCollection(collection, ctxt);
 
@@ -800,11 +804,15 @@ class ProjectionDaemon {
 
             try {
                 // - remove native instance from domain collection
-                await this._execTransaction(async () => {
-                    // - add instance
-                    let tx = await this.services.domain.removeInstance(domInst.id);
-                    return tx;
-                });
+                try {
+                    await this._execTransaction(async () => {
+                        // - add instance
+                        let tx = await this.services.domain.removeInstance(domInst.id);
+                        return tx;
+                    });
+                } catch (err) {
+                    this.log('Error removing instance (continue anyway): ' + err.stack);
+                }
 
                 // - update collection
                 // - obtain lock on collection
@@ -979,15 +987,18 @@ class ProjectionDaemon {
             });
             promises.push(promise);
         }
-        await Q.waitAll(promises);
-
+        try {
+            await Q.waitAll(promises);
+        } catch (err) {
+            this.log('Error removing collection (continue anyway): ' + err.stack);
+        } 
 
         // Delete collection from store
         await this.store.delete("collections", { id: collection.id });
 
         // Delete all links from store
         await this.store.delete("links", { src: collection.id });
-        await this.store.delete("links", { dst: collection.id });
+        await this.store.delete("links", { dst: collection.id });       
 
     }
 
@@ -1003,7 +1014,7 @@ class ProjectionDaemon {
      * @param {Object} ctxt - The operation context
      */
     async _syncInstances(opts, ctxt) {
-        this.log(`_syncInstances(${JSON.stringify(opts)})`);
+        //this.log(`_syncInstances(${JSON.stringify(opts)})`);
 
         ctxt = ctxt || {};
 
@@ -1078,7 +1089,7 @@ class ProjectionDaemon {
      * @return {Array<Object>} The operation results
      */
     async _findInCollection(collection, query, ctxt) {
-        this.log(`_findInCollection(${JSON.stringify(collection)},${JSON.stringify(query)})`);
+        //this.log(`_findInCollection(${JSON.stringify(collection)},${JSON.stringify(query)})`);
 
         if (!collection) throw this.error(`Unable to find in collection: missing collection`);
         query = query || {};
@@ -1134,7 +1145,7 @@ class ProjectionDaemon {
      * @param {number} [opts.timeout] - Max waiting time (default 15m)
      */
     _loop(fn, opts) {
-        this.log(`loop(${JSON.stringify(opts)})`);
+        //this.log(`loop(${JSON.stringify(opts)})`);
         opts = opts || {};
         opts.retry = opts.retry || 5000;
         opts.timeout = opts.timeout || 900000;

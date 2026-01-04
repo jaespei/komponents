@@ -53,7 +53,7 @@ class LinksDaemon {
         this.utils = utils;
         this.opts = opts;
         this.error = utils.error;
-        this.log = utils.log || ((msg) => console.log("[LinksDaemon] " + msg));
+        this.log = utils.log ||  ((msg) => console.log("[LinksDaemon] " + msg)); // ((msg) => {}); 
         this.opts.interval = this.opts.interval || this.utils.constants.DAEMON_INTERVAL;
         this.opts.timeFrame = this.opts.timeFrame || this.utils.constants.DAEMON_TIMEFRAME;
     }
@@ -134,7 +134,7 @@ class LinksDaemon {
      * @param {Object} ctxt - Operation context
      */
     async _syncCollections(opts, ctxt) {
-        this.log(`_syncCollections(${JSON.stringify(opts)})`);
+        //this.log(`_syncCollections(${JSON.stringify(opts)})`);
 
         opts = opts || {};
         ctxt = ctxt || {};
@@ -245,7 +245,7 @@ class LinksDaemon {
      * @param {Object} ctxt - Operation context
      */
     async _syncLinks(opts, ctxt) {
-        this.log(`_syncLinks(${JSON.stringify(opts)})`);
+        //this.log(`_syncLinks(${JSON.stringify(opts)})`);
 
         opts = opts || {};
         ctxt = ctxt || {};
@@ -369,7 +369,7 @@ class LinksDaemon {
      * @param {*} ctxt 
      */
     async _syncInstances(sync, ctxt) {
-        this.log(`_syncInstances(${JSON.stringify(sync)})`);
+        //this.log(`_syncInstances(${JSON.stringify(sync)})`);
 
         let promises = [];
         // for each instance to sync
@@ -476,7 +476,7 @@ class LinksDaemon {
      *                  An array of string represents collection members' ids.
      */
     async _findOutputs(opts, ctxt) {
-        this.log(`_findOutputs(${JSON.stringify(opts)})`);
+        //this.log(`_findOutputs(${JSON.stringify(opts)})`);
 
         ctxt = ctxt || {};
         ctxt.collections = ctxt.collections || {};
@@ -664,7 +664,7 @@ class LinksDaemon {
      * @return {Array<Object>} The operation results
      */
     async _findInCollection(collection, query, ctxt) {
-        this.log(`_findInCollection(${JSON.stringify(collection)},${JSON.stringify(query)})`);
+        //this.log(`_findInCollection(${JSON.stringify(collection)},${JSON.stringify(query)})`);
 
         if (!collection) throw this.error(`Unable to find in collection: missing collection`);
         query = query || {};

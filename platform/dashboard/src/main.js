@@ -32,7 +32,7 @@ window.app = new Vue({
         showNavigation: null, // show navigation drawer
         user: auth,
         isError: false,
-        errorMsg: "rr",
+        errorMsg: "",
         isSuccess: false,
         successMsg: ""
     },

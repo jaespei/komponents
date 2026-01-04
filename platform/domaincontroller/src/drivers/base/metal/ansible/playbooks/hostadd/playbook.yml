@@ -62,6 +62,7 @@
         ansible_user: "{{ var_hostUser }}"
         ansible_password: "{{ var_hostPassword | default(omit) }}"
         ansible_ssh_private_key_file: "{{ var_hostPrivateKeyPath | default(omit) }}"
+        ansible_ssh_common_args: -o StrictHostKeyChecking=no
       changed_when: false
 
 # ------------------------------
@@ -96,6 +97,7 @@
         groups: sudo
         append: yes
         createhome: yes
+        password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters+digits') | password_hash('sha512') }}"
         state: present
 
     - name: Add domain user to sudoers
@@ -140,25 +142,25 @@
 # ------------------------------
 #  Clean-up host connection
 # ------------------------------
-- name: Clean-up host connection
-  hosts: localhost
-  connection: local
-  tasks:
-    - name: Delete domain private key
-      when: var_domainPrivateKey is defined
-      file: 
-        path: "{{ var_domainPrivateKeyPath }}"
-        state: absent
+# - name: Clean-up host connection
+#   hosts: localhost
+#   connection: local
+#   tasks:
+#     - name: Delete domain private key
+#       when: var_domainPrivateKey is defined
+#       file: 
+#         path: "{{ var_domainPrivateKeyPath }}"
+#         state: absent
 
-    - name: Delete domain public key
-      when: var_domainPublicKey is defined
-      file: 
-        path: "{{ var_domainPrivateKeyPath }}.pub"
-        state: absent
+#     - name: Delete domain public key
+#       when: var_domainPublicKey is defined
+#       file: 
+#         path: "{{ var_domainPrivateKeyPath }}.pub"
+#         state: absent
     
-    - name: Delete host private key
-      when: var_hostPrivateKey is defined
-      file: 
-        path: "{{ var_hostPrivateKeyPath }}"
-        state: absent
+#     - name: Delete host private key
+#       when: var_hostPrivateKey is defined
+#       file: 
+#         path: "{{ var_hostPrivateKeyPath }}"
+#         state: absent
     

@@ -2,26 +2,28 @@
 # Variables:
 # - var_workingDir
 # - var_domainPrivateKey
-# - var_domainUser:
-# - var_fabricHost: 
+# - var_domainUser
+# - var_hostAddr
+# - var_domainId
 #
 # Requirements: 
+# - OpenSSH installed in localhost
 #
 
 # ------------------------------
-#  Prepare fabric connection
+#  Prepare local machine
 # ------------------------------
-- name: Prepare fabric connection
+- name: Add new domain
   hosts: localhost
   connection: local
   tasks:
+
     - name: Create working dir
       file:
         path: "{{ var_workingDir }}"
         state: directory
 
     - name: Set domain private key path
-      when: var_domainPrivateKey is defined
       set_fact: 
         var_domainPrivateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
 
@@ -34,32 +36,28 @@
 
     - name: Add in-mem host
       add_host:
-        name: fabric
-        ansible_host: "{{ var_fabricHost }}"
+        name: host
+        ansible_host: "{{ var_hostAddr }}"
         ansible_user: "{{ var_domainUser }}"
         ansible_ssh_private_key_file: "{{ var_domainPrivateKeyPath }}"
-      changed_when: false
+      changed_when: false     
 
 # ------------------------------
-#  Remove fabric
+#  Configure host
 # ------------------------------
-- name: Remove fabric
-  hosts: fabric
+- name: Configure host
+  hosts: host
   tasks:
-
-    - name: Remove domain user
-      become: yes
-      ignore_errors: yes   # because the current user is deleted !
-      user:
-        name: "{{ var_domainUser }}"
-        state: absent
-        remove: yes
-        force: yes
+    
+    # ---------- Uninstall k3s
+    - name: Delete cluster
+      shell: 
+        cmd: "/usr/local/bin/k3s-uninstall.sh" 
 
 # ------------------------------
-#  Clean-up fabric connection
+#  Clean-up host connection
 # ------------------------------
-- name: Clean-up fabric connection
+- name: Clean-up host connection
   hosts: localhost
   connection: local
   tasks:

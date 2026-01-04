@@ -142,12 +142,12 @@ export default {
     },
     variables() {
       return _.map(this.component.model.variables, (varValue, varName) => {
-        return {
+        /*return {
             name: varName,
-            value: varValue || "",
+            value: JSON.stringify(varValue) || "",
             desc: this.desc.variables[varName] || "",
-          };
-        /*if (_.isString(varValue)) {
+          };*/
+        if (_.isString(varValue)) {
           return {
             name: varName,
             value: varValue || "",
@@ -159,7 +159,7 @@ export default {
             value: varValue.value || "",
             desc: this.desc.variables[varValue[`@name`]] || "",
           };
-        }*/
+        }
       });
     },
     desc() {

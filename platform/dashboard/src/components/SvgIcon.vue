@@ -58,7 +58,7 @@ export default {
       }
   },
   created() {
-      console.log('[SvgIcon] created()');
+      this.$util.log('[SvgIcon] created()');
   }
 };
 </script>

@@ -143,11 +143,11 @@ export default {
   computed: {
     myMode() {
       if (this.mode) return this.mode;
-      console.log(this.user.perms);
+      this.$util.log(this.user.perms);
       let perms = _.filter(this.user.perms, (perm) =>
         this.$root.user.roles.includes(perm.role)
       );
-      console.log(perms);
+      this.$util.log(perms);
       if (_.find(perms, (perm) => perm.type == "write" || perm.type == "owner"))
         return "write";
       else return "read";

@@ -36,7 +36,7 @@ const Q = require('utils').q;
 const util = require("util");
 
 let name = process.env.INSTANCE_NAME ? process.env.INSTANCE_NAME : (process.env.INSTANCE_ID ? process.env.INSTANCE_ID : null);
-let _log = require('utils').logger('store.kv' + (name ? '<' + name + '>' : ''), { enabled: true, print: true });
+let _log = require('utils').logger('store.kv' + (name ? '<' + name + '>' : ''), { enabled: true, print: false });
 const error = require('utils').error;
 
 // Special keys

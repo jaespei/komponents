@@ -55,7 +55,7 @@ class ScheduleDaemon {
     }
 
     async run() {
-        this.log("run()");
+        //this.log("run()");
 
         try {
 
@@ -81,7 +81,7 @@ class ScheduleDaemon {
      * @param {Object} ctxt - Operation context
      */
     async _scheduleInstances(opts) {
-        this.log(`_scheduleInstances(${opts})`);
+        //this.log(`_scheduleInstances(${opts})`);
 
         // Obtain instances to sync
         let instances = [];
@@ -213,7 +213,7 @@ class ScheduleDaemon {
      * @param {*} instances 
      */
     _sortEvents(events, instances) {
-        this.log(`_sortEvents(${JSON.stringify(events)})`);
+        //this.log(`_sortEvents(${JSON.stringify(events)})`);
 
         // Sort instances hierarchically
         let sortedInstances = [];
@@ -255,7 +255,7 @@ class ScheduleDaemon {
             if (eventsByParent[inst.id]) Array.prototype.push.apply(sortedEvents, eventsByParent[inst.id]);
         });
 
-        this.log(`_sortEvents() => ${JSON.stringify(sortedEvents)}`);
+        //this.log(`_sortEvents() => ${JSON.stringify(sortedEvents)}`);
 
         return sortedEvents;
 

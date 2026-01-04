@@ -20,7 +20,7 @@ COPY src /komponents/
 WORKDIR /komponents/
 
 # Install iptables, netcat
-RUN apt-get update && apt-get install -y iptables netcat
+RUN apt-get update && apt-get install -y iptables netcat-traditional
 RUN npm install
 
 # Block container

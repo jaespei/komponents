@@ -1489,14 +1489,14 @@ export default {
     },
 
     /**
-     * Load the library of @core components.
+     * Load the library of @core/@ui components.
      */
     async loadLibrary() {
       this.$util.log(`[ComponentModel] loadLibrary()`);
 
       let coreComponents = await this.$model.listComponents(
         this.$root.user.token,
-        { labels: { $any: ["tag=@core"] } }
+        { labels: { $any: ["tag=@core", "tag=@ui"] } }
       );
 
       // - add obligatory Link component type
@@ -1517,7 +1517,7 @@ export default {
         }
       });
 
-      // - load each @core component as @opaque
+      // - load each @core/@ui component as @opaque
       /*await*/ _.each(coreComponents, /*async*/ (comp) => {
         // - parse model
         //let model = JSON.parse(comp.model);
@@ -1535,13 +1535,14 @@ export default {
         // - add special properties
         let re = new RegExp("<(.*)>.*?|<(.*) />");
         let props = {
-          "@core": true,
-          "@opaque": true,
+          "@core": tags.includes("@core"),
+          "@ui": tags.includes("@ui"),
+          "@opaque": tags.includes("@core"),
           "@component": tags.includes("@component"),
           "@connector": tags.includes("@connector"),
         };
-        if (tags.includes("@component")) props["@component"] = true;
-        if (tags.includes("@connector")) props["@connector"] = true;
+        /*if (tags.includes("@component")) props["@component"] = true;
+        if (tags.includes("@connector")) props["@connector"] = true;*/
 
         // - get icon
         let icon = _.find(comp.labels, (label) => label.startsWith("@icon="));
@@ -2369,9 +2370,9 @@ export default {
               },*/
             ],
           };
-          // - add library @core components
+          // - add library @ui components
           _.each(this.components, (comp, path) => {
-            if (comp["@core"] && comp["@component"]) {
+            if (comp["@ui"] && comp["@component"]) {
               componentsMenu.actions.push({
                 id: this.uuid(),
                 name: comp.type == "basic" ? "addComponent" : "addComposite",
@@ -2403,11 +2404,11 @@ export default {
                 icon: "mdi-arrow-right",
                 data: "Link",
               },
-            ],
+            ], 
           };
-          // - add library @core connectors
+          // - add library @core/@ui connectors
           _.each(this.components, (comp, path) => {
-            if (comp["@core"] && comp["@connector"]) {
+            if (comp["@ui"] && comp["@connector"]) {
               connectorsMenu.actions.push({
                 id: this.uuid(),
                 name: "addConnector",

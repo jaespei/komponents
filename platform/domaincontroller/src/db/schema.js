@@ -17,6 +17,7 @@ module.exports = {
             type: "str", // "k8s/metal", "k8s/gke", etc.
             title: "str", // domain title
             labels: "str[]", // domain labels
+            //addr: "str", // domain entry point address (useful for NodePort)
             gateway: "str", // domain gateway
             ingress: "str", // domain ingress
             sIngress: "str", // domain secure ingress

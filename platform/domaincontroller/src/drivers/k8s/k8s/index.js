@@ -2,6 +2,7 @@ const k8s = require('@kubernetes/client-node');
 const streams = require("memory-streams");
 const _ = require("lodash");
 const Q = require("q");
+const url = require("url");
 
 Q.longStackSupport = true;
 
@@ -19,6 +20,8 @@ Q.waitAll = function(promises) {
     return deferred.promise;
 
 };
+
+
 
 /**
  * Driver for managing a k8s cluster.
@@ -99,9 +102,13 @@ exports.K8sDriver = class K8sDriver {
         this.log(`addDomain(${JSON.stringify(domain)})`);
 
         // Add gateway pod as ReplicaSet
+        let gwImage = (domain.cfg && domain.cfg.registryUrl && (domain.cfg.registryUrl + "/" + this.utils.constants.DOMAIN_K8S_IMAGE_GATEWAY)) ||
+                    (this.utils.constants.DOMAIN_K8S_REGISTRY_URL && (this.utils.constants.DOMAIN_K8S_REGISTRY_URL + "/" + this.utils.constants.DOMAIN_K8S_IMAGE_GATEWAY)) ||
+                    this.utils.constants.DOMAIN_K8S_IMAGE_GATEWAY;
         let rs = await this._addReplicaSet(
             domain, {
-                name: `ks-${domain.id}`,
+                name: `ks-gw-${domain.id}`,
+                namespace: "default",
                 labels: {
                     type: "replicaset",
                     domain: domain.id
@@ -123,7 +130,7 @@ exports.K8sDriver = class K8sDriver {
                     spec: {
                         containers: [{
                             name: "main",
-                            image: this.utils.constants.DOMAIN_K8S_IMAGE_GATEWAY
+                            image: gwImage
                         }]
                     }
                 },
@@ -139,7 +146,8 @@ exports.K8sDriver = class K8sDriver {
             let [gwAddr, gwPort] = domain.gateway.split(":");
             let svc = await this._addService(
                 domain, {
-                    name: `ks-${domain.id}`,
+                    name: `ks-gw-${domain.id}`,
+                    namespace: "default",
                     labels: {
                         type: "nodeport",
                         domain: domain.id
@@ -221,8 +229,8 @@ exports.K8sDriver = class K8sDriver {
 
         // 2. Remove gateway
 
-        await this._removeService(domain, `ks-${domain.id}`);
-        await this._removeReplicaSet(domain, `ks-${domain.id}`);
+        await this._removeService(domain, `ks-gw-${domain.id}`);
+        await this._removeReplicaSet(domain, `ks-gw-${domain.id}`);
 
     }
 
@@ -592,6 +600,10 @@ exports.K8sDriver = class K8sDriver {
                     dstPorts.push(port);
                 }
 
+                let proxyImage = (domain.cfg && domain.cfg.registryUrl && (domain.cfg.registryUrl + "/" + this.utils.constants.DOMAIN_K8S_IMAGE_PROXY)) ||
+                    (this.utils.constants.DOMAIN_K8S_REGISTRY_URL && (this.utils.constants.DOMAIN_K8S_REGISTRY_URL + "/" + this.utils.constants.DOMAIN_K8S_IMAGE_PROXY)) ||
+                    this.utils.constants.DOMAIN_K8S_IMAGE_PROXY;
+
                 pod = await this._addPod(
                     domain, {
                         name: `ks-${_instance.id}`,
@@ -604,7 +616,7 @@ exports.K8sDriver = class K8sDriver {
                         // ---- special proxy container
                         containers: [{
                             name: "main",
-                            image: this.utils.constants.DOMAIN_K8S_IMAGE_PROXY,
+                            image: proxyImage,
                             env: [
                                 { name: "GATEWAY", value: gw },
                                 { name: "DEST", value: dstAddr },
@@ -618,6 +630,11 @@ exports.K8sDriver = class K8sDriver {
 
                 // Add regular instance
                 //
+                let sidecarImage = (domain.cfg && domain.cfg.registryUrl && (domain.cfg.registryUrl + "/" + this.utils.constants.DOMAIN_K8S_IMAGE_SIDECAR)) ||
+                    (this.utils.constants.DOMAIN_K8S_REGISTRY_URL && (this.utils.constants.DOMAIN_K8S_REGISTRY_URL + "/" + this.utils.constants.DOMAIN_K8S_IMAGE_SIDECAR)) ||
+                    this.utils.constants.DOMAIN_K8S_IMAGE_SIDECAR;
+
+                let [source, cmd] = instance.source.split("?cmd="); 
 
                 pod = await this._addPod(
                     domain, {
@@ -630,7 +647,9 @@ exports.K8sDriver = class K8sDriver {
                     }, {
                         containers: [{
                                 name: "main",
-                                image: instance.source,
+                                image: source,
+                                command: cmd? ["sh"]: [],
+                                args: cmd? ["-c", cmd]: [],
                                 env: _.map(
                                     _instance.cfg.variables,
                                     (value, name) => {
@@ -644,7 +663,7 @@ exports.K8sDriver = class K8sDriver {
                             // ---- privileged sidecar container 
                             {
                                 name: "sidecar",
-                                image: "sidecar:1.0",
+                                image: sidecarImage,
                                 securityContext: {
                                     privileged: true
                                 }
@@ -1258,7 +1277,7 @@ exports.K8sDriver = class K8sDriver {
      * Open connection against the specified domain.
      */
     _connect(domain, api) {
-        this.log(`_connect(${domain.id})`);
+        //this.log(`_connect(${domain.id})`);
         let kc = new k8s.KubeConfig();
         kc.loadFromString(domain.kubeconfig || domain.cfg.kubeconfig);
         let k8sCon = kc.makeApiClient(api ? k8s[api] : k8s.CoreV1Api);

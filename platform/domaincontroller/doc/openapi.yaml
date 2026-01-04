@@ -133,7 +133,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                type: array
+                items:
+                  type: object
         '400':
           description: Error retrieving resources
     post:

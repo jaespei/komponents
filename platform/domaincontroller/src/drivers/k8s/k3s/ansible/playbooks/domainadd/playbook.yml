@@ -1,0 +1,264 @@
+---
+# Variables:
+# - var_workingDir
+# - var_domainPrivateKey
+# - var_domainUser
+# - var_hostAddr
+# - var_masteNodes
+# - var_workerNodes
+# - var_domainId (for template)
+# - var_gwPrivatePort (for template)
+# - var_gwPort (for template)
+# - var_apiPort (for template)
+# - var_podSubnet (for template)
+# - var_serviceSubnet (for template)
+# - var_ingressPort (template)
+# - var_ingressSecurePort (template)
+# - var_imagesPath
+# - var_registryUrl
+#
+# Requirements: 
+# - OpenSSH installed in localhost
+#
+
+# ------------------------------
+#  Prepare local machine
+# ------------------------------
+- name: Add new domain
+  hosts: localhost
+  connection: local
+  tasks:
+
+    - name: Create working dir
+      file:
+        path: "{{ var_workingDir }}"
+        state: directory
+
+    - name: Set domain private key path
+      set_fact: 
+        var_domainPrivateKeyPath: "{{ var_workingDir }}/{{ ansible_date_time.epoch | int | random | to_uuid }}" 
+
+    - name: Write temporal domain private key locally
+      when: var_domainPrivateKey is defined
+      copy:
+        content: "{{ var_domainPrivateKey }}"
+        dest: "{{ var_domainPrivateKeyPath }}"
+        mode: "600"
+
+    - name: Add in-mem host
+      add_host:
+        name: host
+        ansible_host: "{{ var_hostAddr }}"
+        ansible_user: "{{ var_domainUser }}"
+        ansible_ssh_private_key_file: "{{ var_domainPrivateKeyPath }}"
+      changed_when: false     
+
+# ------------------------------
+#  Configure host
+# ------------------------------
+- name: Configure host
+  hosts: host
+  vars: 
+  tasks:
+
+    - name: Install required tools
+      become: yes
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        name: "{{ item }}"
+      with_items:
+        - git
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+        - software-properties-common
+
+    # ---------- Install k3s
+    - name: Check whether kubectl is installed
+      command: kubectl --version
+      register: kubectl_installed
+      ignore_errors: yes
+
+    - name: Install k3s
+      become: yes
+      shell: curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+      when: kubectl_installed.rc != 0
+
+    - name: Enable private registries
+      when: var_registryUrl is defined and var_registryUrl | length > 0
+      become: yes
+      copy:
+        content: |
+          mirrors:
+            "{{ var_registryUrl }}": 
+              endpoint:
+                - "http://{{ var_registryUrl }}"
+        dest: "/etc/rancher/k3s/registries.yaml"
+        force: true
+
+    - name: Restart K3s service
+      when: var_registryUrl is defined and var_registryUrl | length > 0
+      become: yes
+      service:
+        name: k3s
+        state: restarted
+    
+    # ---------- Load system images (sidecar, proxy, gateway)
+    - name: Check whether images exist
+      uri:
+        url: "http://{{ var_registryUrl }}/v2/gateway/tags/list"
+        method: GET
+        return_content: yes
+      register: docker_registry_response
+      ignore_errors: yes
+
+    - name: Validate image existence
+      set_fact:
+        image_exists: "{{ '1.0' in (docker_registry_response.json.tags | default([])) }}"
+
+    # ---------- Install docker
+    - name: Check whether Docker is installed
+      when: not image_exists
+      become: yes
+      command: docker --version
+      register: docker_installed
+      ignore_errors: yes
+
+    - name: Download key for Docker
+      become: yes
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+      when: not image_exists and docker_installed.rc != 0
+
+    - name: Convert Docker GPG key to binary
+      become: yes
+      command: gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg /etc/apt/keyrings/docker.asc
+      when: not image_exists and docker_installed.rc != 0
+
+    - name: Add Docker repository
+      become: yes
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+        state: present
+      when: not image_exists and docker_installed.rc != 0
+
+    - name: Install Docker and related packages
+      become: yes
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+        #update_cache: true
+      loop:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+        - docker-buildx-plugin
+        - docker-compose-plugin
+      when: not image_exists and docker_installed.rc != 0
+
+    - name: Create Docker's group
+      become: yes
+      group:
+        name: docker
+        state: present
+      when: not image_exists and docker_installed.rc != 0
+
+    - name: Add user to Docker's group
+      become: yes
+      user:
+        name: "{{ var_domainUser }}"
+        append: yes
+        groups: docker
+        state: present     
+      when: not image_exists and docker_installed.rc != 0
+
+    - name: Add insecure registries to docker 
+      become: yes
+      copy:
+        dest: "/etc/docker/daemon.json"
+        content: |
+          {"insecure-registries": ["{{ var_registryUrl }}"]}
+        force: true
+        owner: root
+        group: root
+        mode: '0644'
+      when: not image_exists and docker_installed.rc != 0
+
+    - name: Restart Docker service
+      become: yes
+      service:
+        name: docker
+        state: restarted
+      when: not image_exists and docker_installed.rc != 0
+      
+      #when: not image_exists and docker_installed.rc != 0
+
+    # ---------- Reset connection to allow user changes take effect (groups, ...)
+    - name: Reset connection
+      meta: reset_connection
+      
+    - name: Copy system image sources
+      when: not image_exists
+      copy:
+        src: "{{ var_imagesPath }}/{{ item }}"
+        dest: "/home/{{ var_domainUser }}/images/"
+        force: false
+      with_items:
+        - gateway
+        - proxy
+        - sidecar
+        - multiconnector
+
+    - name: Build system images
+      when: not image_exists
+      shell:
+        cmd: "docker build -t {{ var_registryUrl }}/{{ item }}:1.0 /home/{{ var_domainUser }}/images/{{ item }}"
+      with_items:
+        - gateway
+        - proxy
+        - sidecar
+        - multiconnector
+
+    - name: Load system images
+      when: not image_exists
+      shell: 
+        cmd: "docker image push {{ var_registryUrl }}/{{ item }}:1.0 "
+      with_items:
+        - gateway
+        - proxy
+        - sidecar
+        - multiconnector
+
+    # ---------- Obtain cluster config
+    - name: Obtain cluster config
+      slurp:
+        src: /etc/rancher/k3s/k3s.yaml
+      register: k3sConfig
+
+    - name: KOMPONENTS_RESULT
+      set_fact: 
+        result:
+          config: "{{ k3sConfig['content'] | b64decode }}"
+
+    # - name: KOMPONENTS_RESULT
+    #   set_fact: 
+    #     result:
+    #       config: "{{ lookup('file', '/home/{{ var_domainUser }}/.kube/config', rstrip=False) | from_yaml }}"
+
+# ------------------------------
+#  Clean-up host connection
+# ------------------------------
+# - name: Clean-up host connection
+#   hosts: localhost
+#   connection: local
+#   tasks:
+#     - name: Delete domain private key
+#       when: var_domainPrivateKey is defined
+#       file: 
+#         path: "{{ var_domainPrivateKeyPath }}"
+#         state: absent

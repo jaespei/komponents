@@ -77,6 +77,7 @@ export default {
   data() {
     return {
       domainTypes: [
+        { text: "K3s", value: "k3s/k8s", disabled: false },
         { text: "Kubernetes in Kind", value: "kind/k8s", disabled: false },
         { text: "External Kubernetes", value: "external/k8s", disabled: false },
         {

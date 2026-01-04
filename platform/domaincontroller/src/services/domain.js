@@ -157,7 +157,7 @@ class DomainService {
      * @return {Object} The query results
      */
     async listDomains(query, opts) {
-        this.log(`listDomains(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
+        //this.log(`listDomains(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
         query = query || {};
         opts = opts || {};
         if (!query.state) query.state = "ready";
@@ -305,7 +305,7 @@ class DomainService {
      * @return {Object} The query results
      */
     async listResources(query, opts) {
-        this.log(`listResources(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
+        //this.log(`listResources(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
         query = query || {};
         opts = opts || {};
         let result = await this.store.search("resources", query, opts);
@@ -324,7 +324,7 @@ class DomainService {
      * @return {Object} The query results
      */
     async listCollections(query, opts) {
-        this.log(`listCollections(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
+        //this.log(`listCollections(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
         query = query || {};
         opts = opts || {};
         if (!query.state) query.state = "ready";
@@ -490,7 +490,7 @@ class DomainService {
      * @return {Object} The query results
      */
     async listLinks(query, opts) {
-        this.log(`listLinks(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
+        //this.log(`listLinks(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
         query = query || {};
         opts = opts || {};
         let result = await this.store.search("links", query, opts);
@@ -636,7 +636,7 @@ class DomainService {
      * @return {Object} The query results
      */
     async listInstances(query, opts) {
-        this.log(`listInstances(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
+        //this.log(`listInstances(${JSON.stringify(query)}, ${JSON.stringify(opts)})`);
         query = query || {};
         opts = opts || {};
         if (!query.state) query.state = { $in: ["ready", "failed"] };
