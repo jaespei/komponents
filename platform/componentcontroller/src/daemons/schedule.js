@@ -176,7 +176,7 @@ class ScheduleDaemon {
                         event.subcomponent || event.connector,
                         model, { domain: event.domain }
                     );
-                } else if (subcompType.type == "omposite") {
+                } else if (subcompType.type == "composite") {
                     await this.services.component._addComposite(
                         parent,
                         event.subcomponent || event.connector,
